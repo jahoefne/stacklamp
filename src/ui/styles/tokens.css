@@ -1,0 +1,157 @@
+/*
+ * stacklamp design tokens: "Studio Glass" (70s studio glass meets Bauhaus).
+ * Source of truth for every colour, size and timing in the UI. See DESIGN.md.
+ *
+ * Rules
+ * - This file is the only stylesheet that contains raw colour values. Everything
+ *   else references var(--…).
+ * - Contrast pairs are documented in DESIGN.md (all text pairs are WCAG AA).
+ * - The page has one light theme. The 3D stage is always dark (--stage-*).
+ * - Breakpoints cannot be custom properties; use the literal values
+ *   600px (sm), 960px (md: two-column configurator), 1280px (lg).
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ── Surfaces & ink ───────────────────────────────────────────────────── */
+  --color-paper: #F4EEE1;        /* page ground, warm paper */
+  --color-paper-2: #E8DFCC;      /* insets, panels, table stripes, field fill on hover */
+  --color-ink: #1B1814;          /* text, rules, borders of interactive things */
+  --color-ink-2: #4F483F;        /* secondary text, hints, units (AA on paper and paper-2) */
+  --color-ink-3: #7B7166;        /* disabled text and icons only (not AA by intent) */
+  --color-line: #82776A;         /* hairlines and dividers (3:1 on paper, usable for boundaries) */
+  --color-inverse: #1B1814;      /* dark surfaces: mobile mini-bar, toast, footer */
+  --color-inverse-ink: #F4EEE1;  /* text on --color-inverse */
+  --color-scrim: rgb(27 24 20 / 0.55);
+  --color-selection: #F2AE1C;    /* ::selection background (ink text) */
+
+  /* ── Action & status ──────────────────────────────────────────────────── */
+  --color-accent: #B83217;       /* vermilion: primary action fill, active marks */
+  --color-accent-ink: #FFF8EC;   /* text/icons on --color-accent */
+  --color-focus: #2E62F0;        /* focus outline; >= 3:1 on paper, paper-2, ink and stage */
+  --color-danger: #A3153F;       /* crimson, errors (text-safe on paper / paper-2) */
+  --color-warning: #855000;      /* dark amber, warnings (text-safe on paper / paper-2) */
+  --color-ok: #1B6A40;           /* green, success (text-safe on paper / paper-2) */
+
+  /* ── Bauhaus colour blocks (decorative flats; text pairs in DESIGN.md) ── */
+  --block-1: #F2AE1C;            /* mustard  - ink text  */
+  --block-2: #EE6A2A;            /* tangerine - ink text */
+  --block-3: #C23224;            /* signal red - paper text */
+  --block-4: #6A47BE;            /* violet - paper text */
+  --block-5: #2652C2;            /* cobalt - paper text */
+  --block-6: #0E7570;            /* teal - paper text */
+
+  /* ── Default translucent PETG palette (ids clr smk amb org red vio blu tea grn) ── */
+  --petg-clr: #FFF4DC;           /* Clear  (warm near-white) */
+  --petg-smk: #6B625A;           /* Smoke  */
+  --petg-amb: #FFA41B;           /* Amber  */
+  --petg-org: #FF6A1F;           /* Orange */
+  --petg-red: #F2363F;           /* Red    */
+  --petg-vio: #9E5FFF;           /* Violet */
+  --petg-blu: #3D7BFF;           /* Blue   */
+  --petg-tea: #00B3A6;           /* Teal   */
+  --petg-grn: #33C24D;           /* Green  */
+
+  /* ── 3D stage (always dark). Hex colours, glow/bloom are plain numbers. ── */
+  --stage-bg: #110F12;           /* clear colour / background of the canvas box */
+  --stage-floor: #1A1715;        /* floor disc */
+  --stage-led: #FFD49A;          /* the LED core, ~3000 K warm white */
+  --stage-part: #5C554E;         /* printed opaque parts: base and top cover */
+  --stage-rod: #C9CDD2;          /* brushed aluminium rod (visible above / in exploded view) */
+  --stage-glow-strength: 1.0;    /* multiplier for the additive band glow */
+  --stage-bloom: 0.6;            /* bloom strength on the high quality tier */
+  --stage-pool: #FFB86B;         /* optional: tint of the light pool on the floor */
+  --stage-sheen: #FFFFFF;        /* optional: specular sheen of the PETG */
+  --stage-ink: #F4EEE1;          /* text and icons drawn over the stage */
+  --stage-line: #4A433C;         /* hairlines/borders of overlays on the stage */
+
+  /* ── Typography ───────────────────────────────────────────────────────── */
+  --font-display: 'Jost', 'Futura', 'Century Gothic', 'Avenir Next', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Space Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+
+  /* fluid scale, 360px -> 1280px viewport (rem = 16px) */
+  --fs-xs: clamp(0.75rem, 0.73rem + 0.09vw, 0.8125rem);       /* 12 -> 13 */
+  --fs-sm: clamp(0.8125rem, 0.79rem + 0.11vw, 0.875rem);      /* 13 -> 14 */
+  --fs-md: clamp(0.9375rem, 0.92rem + 0.11vw, 1rem);          /* 15 -> 16 (body) */
+  --fs-lg: clamp(1.125rem, 1.07rem + 0.22vw, 1.25rem);        /* 18 -> 20 */
+  --fs-xl: clamp(1.375rem, 1.23rem + 0.65vw, 1.75rem);        /* 22 -> 28 */
+  --fs-2xl: clamp(1.75rem, 1.36rem + 1.74vw, 2.75rem);        /* 28 -> 44 */
+  --fs-display: clamp(2.75rem, 1.25rem + 5.6vw, 6.5rem);      /* 44 -> 104 */
+
+  --lh-tight: 0.95;              /* display and big numbers */
+  --lh-snug: 1.15;               /* headings, labels */
+  --lh-body: 1.5;                /* running text */
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-bold: 700;
+  --fw-black: 900;               /* Jost only (display); Space Grotesk tops out at 700 */
+
+  --tracking-label: 0.08em;      /* uppercase micro labels */
+  --tracking-display: -0.02em;   /* tight display headlines */
+
+  /* ── Spacing (4px base) ───────────────────────────────────────────────── */
+  --space-1: 0.25rem;            /*   4 */
+  --space-2: 0.5rem;             /*   8 */
+  --space-3: 0.75rem;            /*  12 */
+  --space-4: 1rem;               /*  16 */
+  --space-5: 1.5rem;             /*  24 */
+  --space-6: 2rem;               /*  32 */
+  --space-7: 3rem;               /*  48 */
+  --space-8: 4rem;               /*  64 */
+  --space-9: 6rem;               /*  96 */
+  --space-10: 8rem;              /* 128 */
+
+  /* ── Shape: square or round, nothing in between ───────────────────────── */
+  --radius-0: 0;                 /* default for every surface, button, field, tile */
+  --radius-sm: 2px;              /* tiny inline chips only (kbd, unit chip) */
+  --radius-md: 4px;              /* reserved: code/URL boxes; never for primary surfaces */
+  --radius-pill: 999px;          /* swatches (circles), pills, toggles, slider thumbs, icon buttons */
+
+  /* widths: use as `border: var(--border-bold) solid var(--color-ink)` */
+  --border-thin: 1px;
+  --border-bold: 2px;
+
+  /* solid offset shadows: printed objects lifted off the paper */
+  --shadow-block: 4px 4px 0 0 var(--color-ink);
+  --shadow-pop: 6px 6px 0 0 var(--color-ink);
+  --shadow-press: 1px 1px 0 0 var(--color-ink);
+
+  /* focus: an outline, so it never fights the offset shadows.
+     use as `outline: var(--focus-ring); outline-offset: var(--focus-offset)` */
+  --focus-ring: 3px solid var(--color-focus);
+  --focus-offset: 2px;
+
+  /* ── Motion ───────────────────────────────────────────────────────────── */
+  --dur-fast: 120ms;             /* hover, press, colour swaps */
+  --dur-base: 200ms;             /* disclosure, toast in, pill changes */
+  --dur-slow: 400ms;             /* view-mode tween, hero reveal */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* ── Layering ─────────────────────────────────────────────────────────── */
+  --z-raised: 1;
+  --z-sticky: 20;                /* sticky preview, mobile mini-bar */
+  --z-header: 30;
+  --z-popover: 40;               /* select lists, tooltips */
+  --z-toast: 50;
+
+  /* ── Layout ───────────────────────────────────────────────────────────── */
+  --layout-max: 1440px;
+  --layout-gutter: clamp(1rem, 0.6rem + 1.8vw, 2rem);         /* 16 -> 32 page side padding */
+  --panel-width: clamp(380px, 34vw, 460px);                   /* controls column at >= 960px */
+  --preview-min-h: 56svh;        /* mobile preview height; desktop preview is sticky and taller */
+  --header-h: 3.5rem;            /* 56 */
+  --minibar-h: 4rem;             /* 64, mobile sticky bottom bar */
+  --target-min: 2.75rem;         /* 44px touch target on coarse pointers */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}

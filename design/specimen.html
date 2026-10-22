@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>stacklamp specimen</title>
+    <!--
+      Design specimen: tokens and component states for "Studio Glass".
+      Not part of the build. Open with `npx vite --port 5180` at
+      http://localhost:5180/stacklamp/design/specimen.html
+      Forced states use .is-hover / .is-active / .is-focus so every state is visible at once.
+      No raw colour values here: everything comes from src/ui/styles/tokens.css.
+    -->
+    <link rel="icon" type="image/svg+xml" href="../public/favicon.svg" />
+    <link rel="stylesheet" href="../src/ui/styles/fonts.css" />
+    <link rel="stylesheet" href="../src/ui/styles/tokens.css" />
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--color-paper);
+        color: var(--color-ink);
+        font-family: var(--font-body);
+        font-size: var(--fs-md);
+        line-height: var(--lh-body);
+        font-weight: var(--fw-regular);
+      }
+      ::selection { background: var(--color-selection); color: var(--color-ink); }
+      .num { font-variant-numeric: tabular-nums; }
+      .wrap { max-width: var(--layout-max); margin: 0 auto; padding: 0 var(--layout-gutter); }
+      h1, h2, h3 { font-family: var(--font-display); margin: 0; }
+      h2.spec {
+        font-size: var(--fs-2xl); font-weight: var(--fw-black); line-height: var(--lh-tight);
+        letter-spacing: var(--tracking-display); margin: var(--space-9) 0 var(--space-5);
+      }
+      h3.spec { font-size: var(--fs-lg); font-weight: var(--fw-bold); margin: var(--space-6) 0 var(--space-3); }
+      .micro {
+        font-size: var(--fs-xs); font-weight: var(--fw-bold); text-transform: uppercase;
+        letter-spacing: var(--tracking-label); color: var(--color-ink-2);
+      }
+      .row { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: flex-start; }
+      .cell { display: grid; gap: var(--space-2); justify-items: start; }
+      .cell > .micro { min-height: 1.4em; }
+
+      /* band rule: the page's signature stripe */
+      .band-rule { display: grid; grid-template-columns: repeat(6, 1fr); height: 8px; }
+      .band-rule > i:nth-child(1) { background: var(--block-1); }
+      .band-rule > i:nth-child(2) { background: var(--block-2); }
+      .band-rule > i:nth-child(3) { background: var(--block-3); }
+      .band-rule > i:nth-child(4) { background: var(--block-4); }
+      .band-rule > i:nth-child(5) { background: var(--block-5); }
+      .band-rule > i:nth-child(6) { background: var(--block-6); }
+
+      /* header */
+      .site-header {
+        height: var(--header-h); display: flex; align-items: center; justify-content: space-between;
+        border-bottom: var(--border-bold) solid var(--color-ink);
+      }
+      .wordmark { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--fs-lg); letter-spacing: -0.01em; }
+      .wordmark img { width: 24px; height: 24px; }
+      .site-header nav { display: flex; gap: var(--space-5); font-size: var(--fs-sm); font-weight: var(--fw-medium); }
+      .site-header a { color: inherit; text-underline-offset: 4px; text-decoration-thickness: 2px; text-decoration-color: transparent; }
+      .site-header a:hover { text-decoration-color: currentColor; }
+
+      /* hero */
+      .hero { display: grid; gap: var(--space-6); padding: var(--space-8) 0 var(--space-8); align-items: center; }
+      @media (min-width: 960px) { .hero { grid-template-columns: 7fr 5fr; padding: var(--space-9) 0; } }
+      .hero h1 {
+        font-size: var(--fs-display); font-weight: var(--fw-black); line-height: var(--lh-tight);
+        letter-spacing: var(--tracking-display); margin: var(--space-3) 0 var(--space-6);
+      }
+      .hero .lines { display: grid; gap: var(--space-3); max-width: 34ch; font-size: var(--fs-lg); line-height: 1.4; margin: 0 0 var(--space-6); padding: 0; list-style: none; }
+      .hero .lines li { padding-left: var(--space-5); position: relative; }
+      .hero .lines li::before { content: ''; position: absolute; left: 0; top: 0.45em; width: 12px; height: 12px; }
+      .hero .lines li:nth-child(1)::before { background: var(--block-1); }
+      .hero .lines li:nth-child(2)::before { background: var(--block-2); border-radius: var(--radius-pill); }
+      .hero .lines li:nth-child(3)::before { background: var(--block-3); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+      .hero .meta { margin-top: var(--space-4); color: var(--color-ink-2); font-size: var(--fs-sm); }
+      .hero-art { max-width: 420px; width: 100%; justify-self: center; }
+      .hero-art svg { width: 100%; height: auto; display: block; }
+
+      /* swatches of tokens */
+      .tokens { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-4); }
+      .token { border: var(--border-bold) solid var(--color-ink); background: var(--color-paper); }
+      .token .chip { height: 72px; border-bottom: var(--border-bold) solid var(--color-ink); display: flex; align-items: flex-end; padding: var(--space-2); font-weight: var(--fw-bold); font-size: var(--fs-sm); }
+      .token .meta { padding: var(--space-2); font-size: var(--fs-xs); line-height: 1.35; }
+      .token code, code { font-family: var(--font-mono); font-size: 0.92em; }
+
+      .petg { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-4); }
+      .petg-card { border: var(--border-bold) solid var(--color-ink); }
+      .petg-card .paperside { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); }
+      .petg-card .stageside { background: var(--stage-bg); height: 96px; display: grid; place-items: center; border-top: var(--border-bold) solid var(--color-ink); position: relative; overflow: hidden; }
+      .petg-card .glowbar { width: 26px; height: 64px; border-radius: 2px; }
+      .petg-card .meta { font-size: var(--fs-xs); line-height: 1.3; }
+
+      /* type */
+      .type-row { display: grid; grid-template-columns: 9rem 1fr; gap: var(--space-4); align-items: baseline; border-top: var(--border-thin) solid var(--color-line); padding: var(--space-3) 0; }
+
+      /* spacing/shape */
+      .space-bar { background: var(--block-5); height: 16px; }
+      .shape { width: 96px; height: 64px; background: var(--color-paper); border: var(--border-bold) solid var(--color-ink); display: grid; place-items: center; font-size: var(--fs-xs); }
+
+      /* ── Button ─────────────────────────────────────────────────── */
+      .btn {
+        --_bg: var(--color-paper); --_fg: var(--color-ink);
+        display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+        min-height: var(--target-min); padding: 0 var(--space-5);
+        font: inherit; font-weight: var(--fw-bold); font-size: var(--fs-md); line-height: 1;
+        color: var(--_fg); background: var(--_bg);
+        border: var(--border-bold) solid var(--color-ink); border-radius: var(--radius-0);
+        box-shadow: var(--shadow-block);
+        cursor: pointer; user-select: none; text-decoration: none;
+        transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+      }
+      .btn--primary { --_bg: var(--color-accent); --_fg: var(--color-accent-ink); }
+      .btn:hover, .btn.is-hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-pop); }
+      .btn--secondary:hover, .btn--secondary.is-hover { --_bg: var(--block-1); }
+      .btn:active, .btn.is-active { transform: translate(3px, 3px); box-shadow: var(--shadow-press); }
+      .btn:focus-visible, .btn.is-focus { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+      .btn--ghost { box-shadow: none; border-color: transparent; --_bg: transparent; padding: 0 var(--space-3); }
+      .btn--ghost:hover, .btn--ghost.is-hover { transform: none; box-shadow: none; --_bg: var(--color-paper-2); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
+      .btn--ghost:active, .btn--ghost.is-active { transform: none; box-shadow: none; --_bg: var(--color-paper-2); border-color: var(--color-ink); }
+      .btn:disabled, .btn.is-disabled {
+        --_bg: var(--color-paper-2); --_fg: var(--color-ink-3);
+        border-color: var(--color-ink-3); border-style: dashed; box-shadow: none; transform: none; cursor: not-allowed;
+      }
+      .btn--ghost:disabled { --_bg: transparent; border-color: transparent; }
+      .btn--wide { width: 100%; min-height: 3.5rem; font-size: var(--fs-lg); }
+      .btn--sm { min-height: 2.5rem; padding: 0 var(--space-3); font-size: var(--fs-sm); }
+
+      /* ── IconButton ─────────────────────────────────────────────── */
+      .ibtn {
+        display: inline-grid; place-items: center; width: var(--target-min); height: var(--target-min);
+        border: var(--border-bold) solid var(--color-ink); border-radius: var(--radius-pill);
+        background: var(--color-paper); color: var(--color-ink); cursor: pointer; padding: 0;
+        transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+      }
+      .ibtn:hover, .ibtn.is-hover { background: var(--block-1); }
+      .ibtn:active, .ibtn.is-active { transform: translate(1px, 1px); background: var(--block-2); }
+      .ibtn[aria-pressed='true'] { background: var(--color-ink); color: var(--color-paper); }
+      .ibtn:focus-visible, .ibtn.is-focus { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+      .ibtn:disabled { color: var(--color-ink-3); border-color: var(--color-ink-3); border-style: dashed; background: transparent; cursor: not-allowed; }
+      .on-stage .ibtn { background: var(--stage-bg); color: var(--stage-ink); border-color: var(--stage-line); }
+      .on-stage .ibtn:hover, .on-stage .ibtn.is-hover { border-color: var(--stage-ink); background: var(--stage-bg); }
+      .on-stage .ibtn[aria-pressed='true'] { background: var(--stage-ink); color: var(--stage-bg); border-color: var(--stage-ink); }
+
+      /* ── SegmentedControl ───────────────────────────────────────── */
+      .seg { display: inline-flex; border: var(--border-bold) solid var(--color-ink); background: var(--color-paper); }
+      .seg label { position: relative; display: grid; place-items: center; min-height: calc(var(--target-min) - 4px); padding: 0 var(--space-4); font-weight: var(--fw-medium); font-size: var(--fs-sm); cursor: pointer; }
+      .seg label + label { border-left: var(--border-bold) solid var(--color-ink); }
+      .seg input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+      .seg label:hover, .seg label.is-hover { background: var(--color-paper-2); }
+      .seg label:has(input:checked) { background: var(--color-ink); color: var(--color-paper); font-weight: var(--fw-bold); }
+      .seg label:has(input:focus-visible), .seg label.is-focus { outline: var(--focus-ring); outline-offset: var(--focus-offset); z-index: var(--z-raised); }
+      .seg label:has(input:disabled) { color: var(--color-ink-3); cursor: not-allowed; background: transparent; }
+      .seg--stage { border-color: var(--stage-line); background: var(--stage-bg); color: var(--stage-ink); }
+      .seg--stage label + label { border-left-color: var(--stage-line); }
+      .seg--stage label:hover { background: var(--color-inverse); }
+      .seg--stage label:has(input:checked) { background: var(--stage-ink); color: var(--stage-bg); }
+
+      /* ── Field / NumberField / Select ───────────────────────────── */
+      .field { display: grid; gap: var(--space-1); width: min(100%, 320px); }
+      .field__row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+      .field__label { font-size: var(--fs-sm); font-weight: var(--fw-bold); line-height: var(--lh-snug); }
+      .field__hint { font-size: var(--fs-xs); color: var(--color-ink-2); }
+      .field__error { font-size: var(--fs-xs); color: var(--color-danger); font-weight: var(--fw-medium); display: flex; gap: var(--space-1); align-items: center; }
+      .input {
+        display: flex; align-items: stretch; height: var(--target-min);
+        border: var(--border-bold) solid var(--color-ink); background: var(--color-paper);
+        transition: background-color var(--dur-fast) var(--ease-out);
+      }
+      .input:hover, .input.is-hover { background: var(--color-paper-2); }
+      .input:focus-within, .input.is-focus { outline: var(--focus-ring); outline-offset: var(--focus-offset); background: var(--color-paper); }
+      .input input, .input select {
+        flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; color: inherit; padding: 0 var(--space-3); outline: none;
+      }
+      .input--number input { text-align: right; font-variant-numeric: tabular-nums; font-weight: var(--fw-medium); width: 7ch; }
+      .input__unit { display: grid; place-items: center; padding: 0 var(--space-3); border-left: var(--border-bold) solid var(--color-ink); background: var(--color-paper-2); color: var(--color-ink-2); font-size: var(--fs-sm); }
+      .input.is-invalid { border-color: var(--color-danger); box-shadow: inset 4px 0 0 var(--color-danger); }
+      .input.is-invalid .input__unit { border-left-color: var(--color-danger); }
+      .input.is-disabled { border-style: dashed; border-color: var(--color-ink-3); color: var(--color-ink-3); background: transparent; }
+      .input.is-disabled .input__unit { border-left-color: var(--color-ink-3); background: transparent; color: var(--color-ink-3); }
+      .input--select { position: relative; }
+      .input--select select { appearance: none; padding-right: calc(var(--target-min) + var(--space-2)); cursor: pointer; }
+      .input--select .chev { position: absolute; right: 0; top: 0; bottom: 0; width: calc(var(--target-min) - 4px); display: grid; place-items: center; border-left: var(--border-bold) solid var(--color-ink); pointer-events: none; background: var(--color-paper-2); }
+
+      /* slider */
+      .slider { appearance: none; -webkit-appearance: none; width: 100%; height: 24px; background: transparent; margin: 0; cursor: pointer; }
+      .slider::-webkit-slider-runnable-track { height: 4px; background: linear-gradient(to right, var(--color-ink) var(--_p, 50%), var(--color-line) var(--_p, 50%)); }
+      .slider::-moz-range-track { height: 4px; background: var(--color-line); }
+      .slider::-moz-range-progress { height: 4px; background: var(--color-ink); }
+      .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -9px; border-radius: var(--radius-pill); background: var(--color-paper); border: var(--border-bold) solid var(--color-ink); transition: background-color var(--dur-fast) var(--ease-out); }
+      .slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: var(--radius-pill); background: var(--color-paper); border: var(--border-bold) solid var(--color-ink); }
+      .slider:hover::-webkit-slider-thumb { background: var(--block-1); }
+      .slider:focus-visible { outline: none; }
+      .slider:focus-visible::-webkit-slider-thumb { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+
+      /* checkbox */
+      .check { display: inline-flex; gap: var(--space-2); align-items: center; font-size: var(--fs-sm); cursor: pointer; min-height: var(--target-min); }
+      .check input { appearance: none; width: 22px; height: 22px; margin: 0; border: var(--border-bold) solid var(--color-ink); background: var(--color-paper); display: grid; place-items: center; cursor: pointer; }
+      .check input:checked { background: var(--color-ink); }
+      .check input:checked::after { content: ''; width: 10px; height: 6px; border: solid var(--color-paper); border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+      .check input:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+
+      /* ── Disclosure ─────────────────────────────────────────────── */
+      .disc { border-top: var(--border-bold) solid var(--color-ink); width: min(100%, 420px); }
+      .disc__btn { width: 100%; display: flex; align-items: center; justify-content: space-between; min-height: var(--target-min); padding: 0 var(--space-2); background: transparent; border: 0; font: inherit; font-weight: var(--fw-bold); color: inherit; cursor: pointer; }
+      .disc__btn:hover, .disc__btn.is-hover { background: var(--color-paper-2); }
+      .disc__btn:focus-visible, .disc__btn.is-focus { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+      .disc__btn svg { transition: transform var(--dur-base) var(--ease-out); }
+      .disc__btn[aria-expanded='true'] svg { transform: rotate(180deg); }
+      .disc__panel { padding: var(--space-3) var(--space-2) var(--space-5); font-size: var(--fs-sm); color: var(--color-ink-2); }
+
+      /* ── Swatch ─────────────────────────────────────────────────── */
+      .swatch {
+        --_c: var(--petg-clr);
+        position: relative; width: 32px; height: 32px; border-radius: var(--radius-pill); padding: 0; cursor: pointer;
+        border: var(--border-bold) solid var(--color-ink);
+        background: linear-gradient(135deg, rgb(255 255 255 / 0.38) 0 38%, transparent 38%), var(--_c);
+        transition: transform var(--dur-fast) var(--ease-out);
+      }
+      .swatch::before { content: ''; position: absolute; inset: -8px; border-radius: inherit; } /* 48px hit area */
+      .swatch:hover, .swatch.is-hover { transform: scale(1.1); }
+      .swatch[aria-pressed='true'], .swatch.is-selected { box-shadow: 0 0 0 3px var(--color-paper), 0 0 0 5px var(--color-ink); }
+      .swatch:focus-visible, .swatch.is-focus { outline: var(--focus-ring); outline-offset: 6px; }
+      .swatch:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+      /* ── StatusPill ─────────────────────────────────────────────── */
+      .pill { display: inline-flex; align-items: center; gap: var(--space-2); height: 28px; padding: 0 var(--space-3); border: var(--border-bold) solid var(--color-ink); border-radius: var(--radius-pill); background: var(--color-paper); font-size: var(--fs-sm); font-weight: var(--fw-medium); white-space: nowrap; }
+      .pill::before { content: ''; width: 8px; height: 8px; border-radius: var(--radius-pill); background: var(--_dot, var(--color-ok)); }
+      .pill--busy { --_dot: var(--block-1); }
+      .pill--busy::before { animation: pulse 1.2s var(--ease-in-out) infinite; }
+      .pill--error { background: var(--color-danger); color: var(--color-paper); border-color: var(--color-danger); --_dot: var(--color-paper); }
+      .pill--idle { --_dot: var(--color-ink-3); }
+      .pill--stage { background: var(--stage-bg); color: var(--stage-ink); border-color: var(--stage-line); }
+      @keyframes pulse { 50% { opacity: 0.25; } }
+      @media (prefers-reduced-motion: reduce) { .pill--busy::before { animation: none; } }
+
+      /* ── Toast ──────────────────────────────────────────────────── */
+      .toast { display: flex; align-items: center; gap: var(--space-3); max-width: 420px; min-height: 52px; padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); background: var(--color-inverse); color: var(--color-inverse-ink); border: var(--border-bold) solid var(--color-inverse); box-shadow: 4px 4px 0 0 var(--block-1); font-size: var(--fs-sm); }
+      .toast--error { box-shadow: 4px 4px 0 0 var(--block-3); }
+      .toast .grow { flex: 1; }
+      .toast .tbtn { background: transparent; color: inherit; border: var(--border-bold) solid var(--color-inverse-ink); font: inherit; font-weight: var(--fw-bold); padding: 0 var(--space-3); min-height: 36px; cursor: pointer; }
+      .toast .tbtn:hover { background: var(--color-inverse-ink); color: var(--color-inverse); }
+      .toast .tclose { background: transparent; border: 0; color: inherit; width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer; }
+
+      /* ── Panel section header ───────────────────────────────────── */
+      .sec-head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) 0; border-top: var(--border-bold) solid var(--color-ink); }
+      .sec-head .no { width: 36px; height: 36px; display: grid; place-items: center; font-family: var(--font-display); font-weight: var(--fw-black); font-size: var(--fs-md); }
+      .sec-head h3 { font-size: var(--fs-xl); font-weight: var(--fw-bold); line-height: var(--lh-snug); }
+
+      /* ── Colour band tiles ──────────────────────────────────────── */
+      .bands { display: grid; grid-template-columns: auto 1fr 1fr; column-gap: var(--space-3); width: min(100%, 340px); align-items: end; }
+      .bands .colhead { grid-row: 1; padding-bottom: var(--space-2); }
+      .bands .idx { grid-row: 2; grid-column: 1; display: flex; flex-direction: column-reverse; font-size: var(--fs-xs); color: var(--color-ink-2); font-variant-numeric: tabular-nums; text-align: right; }
+      .bands .idx span { display: flex; align-items: center; justify-content: flex-end; }
+      .bandcol { grid-row: 2; display: flex; flex-direction: column-reverse; border: var(--border-bold) solid var(--color-ink); touch-action: none; }
+      .tile { --_c: var(--petg-clr); position: relative; display: block; width: 100%; min-height: 24px; border: 0; padding: 0; margin: 0; cursor: crosshair; background: var(--_c); }
+      .tile + .tile { border-bottom: var(--border-thin) solid var(--color-ink); }
+      .tile:hover::after, .tile.is-hover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, var(--_brush) 0 50%, transparent 50%); }
+      .tile:focus-visible, .tile.is-focus { outline: var(--focus-ring); outline-offset: -3px; z-index: var(--z-raised); }
+      .tile.is-cursor { box-shadow: inset 0 0 0 3px var(--color-ink), inset 0 0 0 5px var(--color-paper); }
+      @media (pointer: coarse) { .tile { min-height: 32px; } }
+
+      /* ── Palette editor row ─────────────────────────────────────── */
+      .prow { display: grid; grid-template-columns: auto 1fr 7.5rem auto auto; gap: var(--space-2); align-items: center; padding: var(--space-2); border-bottom: var(--border-thin) solid var(--color-line); width: min(100%, 520px); }
+      .prow:hover, .prow.is-hover { background: var(--color-paper-2); }
+      .prow.is-brush { box-shadow: inset 4px 0 0 var(--color-ink); }
+      .prow .input { height: 36px; }
+      .prow .input input { padding: 0 var(--space-2); }
+      .prow .hex input { font-family: var(--font-mono); font-size: var(--fs-sm); text-transform: uppercase; }
+      .prow .hex .input__unit { border-left: 0; border-right: var(--border-bold) solid var(--color-ink); padding: 0 var(--space-2); font-family: var(--font-mono); }
+      .prow .count { font-size: var(--fs-sm); color: var(--color-ink-2); font-variant-numeric: tabular-nums; min-width: 3ch; text-align: right; }
+      .prow .ibtn { width: 36px; height: 36px; border-color: transparent; background: transparent; }
+      .prow .ibtn:hover { border-color: var(--color-ink); background: var(--color-paper); }
+
+      /* ── Generator bar ──────────────────────────────────────────── */
+      .genbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; padding: var(--space-3); background: var(--color-paper-2); border: var(--border-bold) solid var(--color-ink); width: min(100%, 560px); }
+
+      /* ── Warnings ───────────────────────────────────────────────── */
+      .warns { border: var(--border-bold) solid var(--color-ink); width: min(100%, 520px); list-style: none; margin: 0; padding: 0; }
+      .warn { display: grid; grid-template-columns: 28px 1fr auto; gap: var(--space-3); align-items: start; padding: var(--space-3); font-size: var(--fs-sm); }
+      .warn + .warn { border-top: var(--border-thin) solid var(--color-line); }
+      .warn .sev { width: 28px; height: 28px; display: grid; place-items: center; }
+      .warn--error { box-shadow: inset 4px 0 0 var(--color-danger); }
+      .warn--error .sev { background: var(--color-danger); color: var(--color-paper); }
+      .warn--warning .sev { background: var(--block-1); color: var(--color-ink); }
+      .warn--info .sev { background: var(--color-paper-2); color: var(--color-ink); border: var(--border-thin) solid var(--color-ink); }
+      .warn--ok .sev { background: var(--color-ok); color: var(--color-paper); }
+      .warn strong { display: block; }
+      .warn .fix { font: inherit; font-weight: var(--fw-bold); font-size: var(--fs-xs); background: transparent; border: 0; padding: var(--space-1) 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 2px; cursor: pointer; white-space: nowrap; }
+
+      /* ── Download panel ─────────────────────────────────────────── */
+      .dl { border: var(--border-bold) solid var(--color-ink); padding: var(--space-4); width: min(100%, 480px); display: grid; gap: var(--space-4); background: var(--color-paper); }
+      table.bom { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+      table.bom th { text-align: left; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: var(--tracking-label); color: var(--color-ink-2); font-weight: var(--fw-bold); border-bottom: var(--border-bold) solid var(--color-ink); padding: var(--space-2) var(--space-2) var(--space-2) 0; }
+      table.bom td { border-bottom: var(--border-thin) solid var(--color-line); padding: var(--space-2) var(--space-2) var(--space-2) 0; vertical-align: middle; }
+      table.bom .n { text-align: right; font-variant-numeric: tabular-nums; }
+      table.bom tfoot td { border-top: var(--border-bold) solid var(--color-ink); border-bottom: 0; font-weight: var(--fw-bold); }
+      .dot { display: inline-block; width: 14px; height: 14px; border-radius: var(--radius-pill); border: var(--border-thin) solid var(--color-ink); vertical-align: -2px; margin-right: var(--space-2); background: var(--_c); }
+      .progress { height: 10px; border: var(--border-bold) solid var(--color-ink); background: var(--color-paper); }
+      .progress > i { display: block; height: 100%; background: var(--color-accent); width: 43%; transition: width var(--dur-base) var(--ease-out); }
+      .note { font-size: var(--fs-xs); color: var(--color-ink-2); }
+
+      /* ── Stage ──────────────────────────────────────────────────── */
+      .stage { position: relative; background: var(--stage-bg); color: var(--stage-ink); min-height: 520px; display: grid; overflow: hidden; }
+      .stage__bar { position: absolute; inset: var(--space-3) var(--space-3) auto; display: flex; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+      .stage__foot { position: absolute; inset: auto var(--space-3) var(--space-3); display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); font-size: var(--fs-xs); }
+      .stage__hint { opacity: 0.72; }
+      .stage__art { padding: var(--space-9) var(--space-4) var(--space-8); display: grid; place-items: center; }
+      .stage__art svg { height: 100%; max-height: 520px; width: 100%; }
+      .stage__floor { position: absolute; left: 10%; right: 10%; bottom: 14%; height: 18%; border-radius: 50%; background: radial-gradient(closest-side, var(--stage-pool), transparent); opacity: 0.18; }
+
+      /* mini-bar */
+      .minibar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); height: var(--minibar-h); padding: 0 var(--space-4); background: var(--color-inverse); color: var(--color-inverse-ink); width: min(100%, 420px); border-top: 4px solid var(--block-1); }
+      .minibar .btn { box-shadow: none; border-color: var(--color-inverse-ink); min-height: 44px; }
+      .minibar .btn:hover { box-shadow: 4px 4px 0 0 var(--block-1); }
+
+      .icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: var(--space-2); }
+      .icons > div { border: var(--border-thin) solid var(--color-line); display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-2); font-size: var(--fs-xs); }
+      footer.spec-foot { margin: var(--space-9) 0 var(--space-6); font-size: var(--fs-xs); color: var(--color-ink-2); }
+    </style>
+  </head>
+  <body>
+    <div class="band-rule" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="wrap">
+      <header class="site-header">
+        <span class="wordmark"><img src="../public/favicon.svg" alt="" />stacklamp</span>
+        <nav aria-label="Specimen"><a href="#tokens">Tokens</a><a href="#components">Components</a><a href="#stage">Stage</a></nav>
+      </header>
+
+      <!-- hero -->
+      <section class="hero" aria-labelledby="hero-h">
+        <div>
+          <p class="micro">A floor lamp you print yourself</p>
+          <h1 id="hero-h">Light,<br />stacked.</h1>
+          <ul class="lines">
+            <li>A metal core. A ribbon of light. Rings of translucent PETG.</li>
+            <li>Stack printed tubes in any colour order to paint the light, zone by zone.</li>
+            <li>Set the height, pick the colours, download print-ready files. Free, in your browser.</li>
+          </ul>
+          <a class="btn btn--primary" href="#components">Configure your lamp</a>
+          <p class="meta num">1.5 m tall by default · 4 printable parts · open source (MIT)</p>
+        </div>
+        <div class="hero-art" id="mount-hero"></div>
+      </section>
+    </div>
+    <div class="band-rule" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+    <main class="wrap">
+      <h2 class="spec" id="tokens">Colour</h2>
+      <h3 class="spec">Surfaces, ink, action, status</h3>
+      <div class="tokens" data-tokens="--color-paper --color-paper-2 --color-ink --color-ink-2 --color-ink-3 --color-line --color-inverse --color-accent --color-focus --color-danger --color-warning --color-ok"></div>
+      <h3 class="spec">Blocks</h3>
+      <div class="tokens" data-tokens="--block-1 --block-2 --block-3 --block-4 --block-5 --block-6"></div>
+      <h3 class="spec">Default PETG palette: swatch on paper, glow on the stage</h3>
+      <div class="petg" id="petg"></div>
+      <h3 class="spec">Stage</h3>
+      <div class="tokens" data-tokens="--stage-bg --stage-floor --stage-led --stage-part --stage-rod --stage-pool --stage-ink --stage-line"></div>
+
+      <h2 class="spec">Type</h2>
+      <div id="type"></div>
+
+      <h2 class="spec">Space, shape, depth</h2>
+      <div id="space" style="display: grid; gap: var(--space-2)"></div>
+      <div class="row" style="margin-top: var(--space-6)">
+        <div class="cell"><span class="micro">radius-0</span><div class="shape" style="border-radius: var(--radius-0)">surfaces</div></div>
+        <div class="cell"><span class="micro">radius-pill</span><div class="shape" style="border-radius: var(--radius-pill)">pills</div></div>
+        <div class="cell"><span class="micro">shadow-block</span><div class="shape" style="box-shadow: var(--shadow-block)">4 px</div></div>
+        <div class="cell"><span class="micro">shadow-pop</span><div class="shape" style="box-shadow: var(--shadow-pop)">6 px</div></div>
+        <div class="cell"><span class="micro">shadow-press</span><div class="shape" style="box-shadow: var(--shadow-press)">1 px</div></div>
+      </div>
+
+      <h2 class="spec" id="components">Components</h2>
+
+      <h3 class="spec">Button</h3>
+      <div class="row" data-states="btn">
+        <div class="cell"><span class="micro">primary</span><button class="btn btn--primary">Download ZIP</button></div>
+        <div class="cell"><span class="micro">hover</span><button class="btn btn--primary is-hover">Download ZIP</button></div>
+        <div class="cell"><span class="micro">active</span><button class="btn btn--primary is-active">Download ZIP</button></div>
+        <div class="cell"><span class="micro">focus</span><button class="btn btn--primary is-focus">Download ZIP</button></div>
+        <div class="cell"><span class="micro">disabled</span><button class="btn btn--primary" disabled>Download ZIP</button></div>
+      </div>
+      <div class="row" style="margin-top: var(--space-5)">
+        <div class="cell"><span class="micro">secondary</span><button class="btn btn--secondary">Save preset</button></div>
+        <div class="cell"><span class="micro">hover</span><button class="btn btn--secondary is-hover">Save preset</button></div>
+        <div class="cell"><span class="micro">active</span><button class="btn btn--secondary is-active">Save preset</button></div>
+        <div class="cell"><span class="micro">focus</span><button class="btn btn--secondary is-focus">Save preset</button></div>
+        <div class="cell"><span class="micro">disabled</span><button class="btn btn--secondary" disabled>Save preset</button></div>
+      </div>
+      <div class="row" style="margin-top: var(--space-5)">
+        <div class="cell"><span class="micro">ghost</span><button class="btn btn--ghost" data-icon-left="link">Copy link</button></div>
+        <div class="cell"><span class="micro">hover</span><button class="btn btn--ghost is-hover" data-icon-left="link">Copy link</button></div>
+        <div class="cell"><span class="micro">active</span><button class="btn btn--ghost is-active" data-icon-left="link">Copy link</button></div>
+        <div class="cell"><span class="micro">focus</span><button class="btn btn--ghost is-focus" data-icon-left="link">Copy link</button></div>
+        <div class="cell"><span class="micro">disabled</span><button class="btn btn--ghost" data-icon-left="link" disabled>Copy link</button></div>
+      </div>
+
+      <h3 class="spec">IconButton</h3>
+      <div class="row">
+        <div class="cell"><span class="micro">default</span><button class="ibtn" aria-label="Reset view" data-icon="resetView"></button></div>
+        <div class="cell"><span class="micro">hover</span><button class="ibtn is-hover" aria-label="Reset view" data-icon="resetView"></button></div>
+        <div class="cell"><span class="micro">active</span><button class="ibtn is-active" aria-label="Reset view" data-icon="resetView"></button></div>
+        <div class="cell"><span class="micro">pressed</span><button class="ibtn" aria-pressed="true" aria-label="Glow" data-icon="eye"></button></div>
+        <div class="cell"><span class="micro">focus</span><button class="ibtn is-focus" aria-label="Reset view" data-icon="resetView"></button></div>
+        <div class="cell"><span class="micro">disabled</span><button class="ibtn" disabled aria-label="Delete" data-icon="trash"></button></div>
+      </div>
+
+      <h3 class="spec">SegmentedControl</h3>
+      <div class="row">
+        <div class="cell"><span class="micro">default / hover / focus</span>
+          <div class="seg" role="radiogroup" aria-label="Height mode">
+            <label><input type="radio" name="hm" checked />Fit to rod</label>
+            <label class="is-hover"><input type="radio" name="hm" />Keep height</label>
+          </div>
+        </div>
+        <div class="cell"><span class="micro">focus</span>
+          <div class="seg" role="radiogroup" aria-label="Format">
+            <label class="is-focus"><input type="radio" name="fmt" checked />3MF</label>
+            <label><input type="radio" name="fmt" />STL</label>
+          </div>
+        </div>
+        <div class="cell"><span class="micro">disabled option</span>
+          <div class="seg" role="radiogroup" aria-label="Core">
+            <label><input type="radio" name="core" checked />Rod + strip</label>
+            <label><input type="radio" name="core" disabled />LED tube</label>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="spec">Field, NumberField, Select, Checkbox</h3>
+      <div class="row" style="gap: var(--space-6)">
+        <div class="field">
+          <div class="field__row"><label class="field__label" for="f1">Rod length</label>
+            <div class="input input--number"><input id="f1" inputmode="decimal" value="1500" /><span class="input__unit">mm</span></div></div>
+          <input class="slider" type="range" min="600" max="2000" value="1500" style="--_p: 64%" aria-label="Rod length" />
+          <span class="field__hint">600 to 2000 mm. The stack is fitted to it.</span>
+        </div>
+        <div class="field">
+          <div class="field__row"><span class="field__label">Hover</span>
+            <div class="input input--number is-hover"><input value="200" aria-label="Hover" /><span class="input__unit">mm</span></div></div>
+          <div class="field__row"><span class="field__label">Focus</span>
+            <div class="input input--number is-focus"><input value="60" aria-label="Focus" /><span class="input__unit">mm</span></div></div>
+          <div class="field__row"><span class="field__label">Disabled</span>
+            <div class="input input--number is-disabled"><input value="28" disabled aria-label="Disabled" /><span class="input__unit">mm</span></div></div>
+        </div>
+        <div class="field">
+          <div class="field__row"><label class="field__label" for="f2">Outer diameter</label>
+            <div class="input input--number is-invalid"><input id="f2" value="320" aria-invalid="true" aria-describedby="f2e" /><span class="input__unit">mm</span></div></div>
+          <span class="field__error" id="f2e" data-icon-left="warning">Too wide for a 256 mm bed. Max 246 mm.</span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="f3">Printer</label>
+          <div class="input input--select"><select id="f3"><option>Bambu Lab P1S / X1C / A1 (256 mm)</option><option>Bambu Lab A1 mini (180 mm)</option></select><span class="chev" data-icon="chevron"></span></div>
+          <label class="check"><input type="checkbox" checked />Include a fit-test ring</label>
+        </div>
+      </div>
+
+      <h3 class="spec">Disclosure</h3>
+      <div class="row" style="gap: var(--space-6)">
+        <div class="disc"><button class="disc__btn" aria-expanded="false">Printer tuning <span data-icon="chevron"></span></button></div>
+        <div class="disc"><button class="disc__btn is-hover" aria-expanded="true">Printer tuning <span data-icon="chevron"></span></button>
+          <div class="disc__panel">Clearances, overlap, lead-in, screw holes, slits. The defaults print well on a 0.6 mm nozzle.</div></div>
+      </div>
+
+      <h3 class="spec">Swatch</h3>
+      <div class="row" style="gap: var(--space-5)">
+        <div class="cell"><span class="micro">default</span><button class="swatch" style="--_c: var(--petg-amb)" aria-label="Amber"></button></div>
+        <div class="cell"><span class="micro">clear</span><button class="swatch" style="--_c: var(--petg-clr)" aria-label="Clear"></button></div>
+        <div class="cell"><span class="micro">hover</span><button class="swatch is-hover" style="--_c: var(--petg-red)" aria-label="Red"></button></div>
+        <div class="cell"><span class="micro">brush</span><button class="swatch" aria-pressed="true" style="--_c: var(--petg-org)" aria-label="Orange"></button></div>
+        <div class="cell"><span class="micro">focus</span><button class="swatch is-focus" style="--_c: var(--petg-tea)" aria-label="Teal"></button></div>
+        <div class="cell"><span class="micro">disabled</span><button class="swatch" disabled style="--_c: var(--petg-blu)" aria-label="Blue"></button></div>
+      </div>
+
+      <h3 class="spec">StatusPill and Toast</h3>
+      <div class="row">
+        <span class="pill">Ready</span>
+        <span class="pill pill--busy">Updating…</span>
+        <span class="pill pill--idle">Starting engine…</span>
+        <span class="pill pill--error">Can't build</span>
+      </div>
+      <div class="row" style="margin-top: var(--space-5)">
+        <div class="toast" role="status"><span class="grow">Link copied. Anyone with it sees this lamp.</span><button class="tclose" aria-label="Dismiss" data-icon="close"></button></div>
+        <div class="toast" role="status"><span class="grow">Removed Teal. 3 bands are Clear now.</span><button class="tbtn">Undo</button><button class="tclose" aria-label="Dismiss" data-icon="close"></button></div>
+        <div class="toast toast--error" role="alert"><span class="grow">Export failed: the worker stopped. Try again.</span><button class="tbtn">Retry</button><button class="tclose" aria-label="Dismiss" data-icon="close"></button></div>
+      </div>
+
+      <h3 class="spec">Panel section, palette, generators, band tiles</h3>
+      <div style="max-width: 560px">
+        <div class="sec-head"><span class="no" style="background: var(--block-3); color: var(--color-paper)">03</span><h3>Colours</h3></div>
+        <div id="palette"></div>
+        <div style="height: var(--space-4)"></div>
+        <div class="genbar">
+          <span class="micro" style="margin-right: var(--space-1)">Fill</span>
+          <div class="seg" role="radiogroup" aria-label="Target">
+            <label><input type="radio" name="tg" checked />Outer</label>
+            <label><input type="radio" name="tg" />Inner</label>
+            <label><input type="radio" name="tg" />Both</label>
+          </div>
+          <button class="btn btn--secondary btn--sm" data-icon-left="alternate">Alternate</button>
+          <button class="btn btn--secondary btn--sm" data-icon-left="gradient">Gradient</button>
+          <button class="btn btn--secondary btn--sm" data-icon-left="random">Random</button>
+          <button class="btn btn--secondary btn--sm" data-icon-left="mirror">Mirror</button>
+        </div>
+        <div style="height: var(--space-5)"></div>
+        <div class="bands" id="bands"></div>
+      </div>
+
+      <h3 class="spec">WarningsList</h3>
+      <ul class="warns">
+        <li class="warn warn--error"><span class="sev" data-icon="close"></span><span><strong>Outer segment doesn't fit</strong>202 mm socket on a 180 mm bed.</span><button class="fix">Go to printer</button></li>
+        <li class="warn warn--warning"><span class="sev" data-icon="warning"></span><span><strong>Segments stretched 12 %</strong>Segments are 168 mm instead of 150 mm so the stack meets the rod.</span><button class="fix">Go to segment height</button></li>
+        <li class="warn warn--info"><span class="sev" data-icon="info"></span><span>The weight pocket needs tree supports (build plate only).</span></li>
+        <li class="warn warn--ok"><span class="sev" data-icon="check"></span><span>Every part fits your printer.</span></li>
+      </ul>
+
+      <h3 class="spec">DownloadPanel</h3>
+      <div class="dl">
+        <div class="sec-head" style="border-top: 0; padding-top: 0"><span class="no" style="background: var(--block-5); color: var(--color-paper)">05</span><h3>Download</h3></div>
+        <table class="bom">
+          <thead><tr><th>Part</th><th class="n">Qty</th><th class="n">Height</th><th class="n">Mass</th></tr></thead>
+          <tbody>
+            <tr><td>Base</td><td class="n">1</td><td class="n">78 mm</td><td class="n">612 g</td></tr>
+            <tr><td>Outer segment</td><td class="n">11</td><td class="n">154.5 mm</td><td class="n">98 g</td></tr>
+            <tr><td>Inner segment</td><td class="n">11</td><td class="n">154.3 mm</td><td class="n">29 g</td></tr>
+            <tr><td>Top cover</td><td class="n">1</td><td class="n">23 mm</td><td class="n">84 g</td></tr>
+          </tbody>
+        </table>
+        <table class="bom" id="bycolour">
+          <thead><tr><th>Filament</th><th class="n">Outer</th><th class="n">Inner</th><th class="n">Total</th></tr></thead>
+          <tbody></tbody>
+          <tfoot><tr><td>All</td><td class="n">11</td><td class="n">11</td><td class="n">≈ 1.4 kg</td></tr></tfoot>
+        </table>
+        <div class="row" style="justify-content: space-between; align-items: center">
+          <div class="seg" role="radiogroup" aria-label="File format"><label><input type="radio" name="f" checked />3MF</label><label><input type="radio" name="f" />STL</label></div>
+          <label class="check"><input type="checkbox" />Fit-test ring</label>
+        </div>
+        <button class="btn btn--primary btn--wide" data-icon-left="download">Download ZIP</button>
+        <div style="display: grid; gap: var(--space-2)">
+          <div class="progress" role="progressbar" aria-valuenow="3" aria-valuemin="0" aria-valuemax="7" aria-label="Export progress"><i></i></div>
+          <span class="note num" aria-live="polite">Building outer segment… 3 of 7</span>
+        </div>
+        <p class="note" style="margin: 0">Slicers ignore colours inside 3MF files. Load each segment file with the filament the print plan lists.</p>
+      </div>
+
+      <h2 class="spec" id="stage">Stage</h2>
+      <div class="row" style="gap: var(--space-5); align-items: stretch">
+        <div class="stage on-stage" style="flex: 1 1 420px">
+          <div class="stage__floor"></div>
+          <div class="stage__bar">
+            <div class="seg seg--stage" role="radiogroup" aria-label="View">
+              <label><input type="radio" name="vm" checked />Assembled</label>
+              <label><input type="radio" name="vm" />Inner</label>
+              <label><input type="radio" name="vm" />Exploded</label>
+            </div>
+            <div class="row" style="gap: var(--space-2)">
+              <button class="ibtn" aria-pressed="true" aria-label="Glow" data-icon="eye"></button>
+              <button class="ibtn" aria-label="Reset view" data-icon="resetView"></button>
+            </div>
+          </div>
+          <div class="stage__art" id="mount-schematic"></div>
+          <div class="stage__foot"><span class="pill pill--stage">Ready · 11 + 11 rings</span><span class="stage__hint">Drag to orbit · scroll to zoom</span></div>
+        </div>
+        <div style="display: grid; gap: var(--space-4); align-content: start; flex: 0 1 420px">
+          <span class="micro">Mobile mini-bar (sticky bottom)</span>
+          <div class="minibar"><span class="num" style="font-size: var(--fs-sm)"><strong>1533.5 mm</strong> · 22 rings</span><button class="btn btn--primary" data-icon-left="download">Download</button></div>
+        </div>
+      </div>
+
+      <h2 class="spec">Icons</h2>
+      <div class="icons" id="icons"></div>
+
+      <footer class="spec-foot">stacklamp design specimen · tokens from src/ui/styles/tokens.css · fonts Jost and Space Grotesk (SIL OFL 1.1)</footer>
+    </main>
+
+    <script type="module">
+      import { createElement as h } from 'react';
+      import { createRoot } from 'react-dom/client';
+      import { renderToStaticMarkup } from 'react-dom/server';
+      import { StackIllustration } from '../src/ui/illustrations/StackIllustration.tsx';
+      import { Icon, ICON_NAMES } from '../src/ui/illustrations/icons.tsx';
+
+      const css = getComputedStyle(document.documentElement);
+      const v = (name) => css.getPropertyValue(name).trim();
+      const PETG = [
+        ['clr', 'Clear'], ['smk', 'Smoke'], ['amb', 'Amber'], ['org', 'Orange'], ['red', 'Red'],
+        ['vio', 'Violet'], ['blu', 'Blue'], ['tea', 'Teal'], ['grn', 'Green'],
+      ];
+      const hex = Object.fromEntries(PETG.map(([id]) => [id, v(`--petg-${id}`)]));
+      const outer = ['amb', 'amb', 'amb', 'amb', 'org', 'org', 'org', 'org', 'red', 'red', 'red'];
+      const inner = Array(11).fill('clr');
+
+      // contrast helper (WCAG)
+      const lin = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+      const lum = (x) => { const n = parseInt(x.slice(1), 16); return 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255); };
+      const ratio = (a, b) => { const [p, q] = [lum(a), lum(b)].sort((m, n) => n - m); return ((p + 0.05) / (q + 0.05)).toFixed(2); };
+
+      // icons into [data-icon] / [data-icon-left]
+      const icon = (name, size = 20) => renderToStaticMarkup(h(Icon, { name, size }));
+      document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icon(el.dataset.icon); });
+      document.querySelectorAll('[data-icon-left]').forEach((el) => { el.insertAdjacentHTML('afterbegin', icon(el.dataset.iconLeft, 18)); });
+      document.getElementById('icons').innerHTML = ICON_NAMES.map((n) => `<div>${icon(n)}${icon(n, 40)}<code>${n}</code></div>`).join('');
+
+      // token cards
+      const ink = v('--color-ink'), paper = v('--color-paper');
+      document.querySelectorAll('[data-tokens]').forEach((box) => {
+        box.innerHTML = box.dataset.tokens.split(' ').map((t) => {
+          const val = v(t);
+          const onInk = ratio(ink, val), onPaper = ratio(paper, val);
+          const fg = Number(onInk) >= Number(onPaper) ? 'var(--color-ink)' : 'var(--color-paper)';
+          return `<div class="token"><div class="chip" style="background: var(${t}); color: ${fg}">Aa</div>
+            <div class="meta"><code>${t}</code><br>${val}<br><span class="num">ink ${onInk} · paper ${onPaper}</span></div></div>`;
+        }).join('');
+      });
+
+      // PETG palette
+      document.getElementById('petg').innerHTML = PETG.map(([id, name]) => `
+        <div class="petg-card">
+          <div class="paperside"><span class="swatch" style="--_c: var(--petg-${id})"></span>
+            <span class="meta"><strong>${name}</strong> <code>${id}</code><br>${hex[id]}<br>ink ${ratio(ink, hex[id])}</span></div>
+          <div class="stageside"><span class="glowbar" style="background: var(--petg-${id}); box-shadow: 0 0 18px 4px var(--petg-${id}), 0 0 48px 12px color-mix(in srgb, var(--petg-${id}) 40%, transparent)"></span></div>
+        </div>`).join('');
+
+      // type
+      const sizes = ['--fs-display', '--fs-2xl', '--fs-xl', '--fs-lg', '--fs-md', '--fs-sm', '--fs-xs'];
+      document.getElementById('type').innerHTML = sizes.map((s) => {
+        const display = s === '--fs-display' || s === '--fs-2xl';
+        const style = display
+          ? `font-family: var(--font-display); font-weight: var(--fw-black); line-height: var(--lh-tight); letter-spacing: var(--tracking-display)`
+          : `font-family: var(--font-body)`;
+        const text = display ? 'Light, stacked.' : 'Rod length 1500 mm · 11 × 154.5 mm · Ø 200';
+        return `<div class="type-row"><code>${s}</code><div style="font-size: var(${s}); ${style}">${text}</div></div>`;
+      }).join('') + `<div class="type-row"><code>--font-mono</code><div style="font-family: var(--font-mono); font-size: var(--fs-sm)">#v=1&amp;rl=1200&amp;bo=2233445566 · outer-segment.3mf</div></div>
+        <div class="type-row"><code>tnum</code><div class="num" style="font-size: var(--fs-lg)">1111.1 mm<br>1533.5 mm<br>0098.0 g</div></div>
+        <div class="type-row"><code>micro label</code><div class="micro">Printer tuning · tracking-label</div></div>`;
+
+      // spacing
+      document.getElementById('space').innerHTML = Array.from({ length: 10 }, (_, i) => `--space-${i + 1}`)
+        .map((s) => `<div style="display: grid; grid-template-columns: 7rem 1fr; align-items: center; gap: var(--space-3)"><code>${s} ${v(s)}</code><div class="space-bar" style="width: var(${s})"></div></div>`).join('');
+
+      // palette editor rows
+      const counts = { clr: 11, smk: 0, amb: 4, org: 4, red: 3, vio: 0, blu: 0, tea: 0, grn: 0 };
+      document.getElementById('palette').innerHTML = PETG.slice(0, 5).map(([id, name], i) => `
+        <div class="prow ${i === 2 ? 'is-brush' : ''} ${i === 3 ? 'is-hover' : ''}">
+          <button class="swatch" ${i === 2 ? 'aria-pressed="true"' : ''} style="--_c: var(--petg-${id})" aria-label="Paint with ${name}"></button>
+          <div class="input"><input value="${name}" aria-label="Name" /></div>
+          <div class="input hex ${i === 4 ? 'is-invalid' : ''}"><span class="input__unit">#</span><input value="${i === 4 ? 'F2363' : hex[id].slice(1)}" aria-label="Hex" /></div>
+          <span class="count">×${counts[id]}</span>
+          <button class="ibtn" aria-label="Remove ${name}">${icon('trash')}</button>
+        </div>`).join('') + `<div style="padding: var(--space-2)"><button class="btn btn--ghost btn--sm">${icon('plus', 18)}Add colour</button></div>`;
+
+      // band tiles (Outer | Inner), index 0 at the bottom
+      const tile = (id, i, extra = '') => `<button class="tile ${extra}" style="--_c: var(--petg-${id}); --_brush: var(--petg-amb); height: 30px" aria-label="Band ${i + 1}: ${PETG.find((p) => p[0] === id)[1]}"></button>`;
+      document.getElementById('bands').innerHTML = `
+        <div class="idx" aria-hidden="true">${outer.map((_, i) => `<span style="height: 30px">${String(i + 1).padStart(2, '0')}</span>`).join('')}</div>
+        <div class="bandcol" style="grid-column: 2" role="group" aria-label="Outer bands, bottom to top">${outer.map((id, i) => tile(id, i, i === 6 ? 'is-hover' : i === 2 ? 'is-cursor' : '')).join('')}</div>
+        <div class="bandcol" style="grid-column: 3" role="group" aria-label="Inner bands, bottom to top">${inner.map((id, i) => tile(id, i, i === 9 ? 'is-focus' : '')).join('')}</div>
+        <span class="micro colhead" style="grid-column: 2">Outer · 11</span><span class="micro colhead" style="grid-column: 3">Inner · 11</span>`;
+
+      // filament by colour
+      document.querySelector('#bycolour tbody').innerHTML = [['amb', 'Amber', 4, 0], ['org', 'Orange', 4, 0], ['red', 'Red', 3, 0], ['clr', 'Clear', 0, 11]]
+        .map(([id, name, o, n]) => `<tr><td><span class="dot" style="--_c: var(--petg-${id})"></span>${name}</td><td class="n">${o}</td><td class="n">${n}</td><td class="n">${o * 98 + n * 29} g</td></tr>`).join('');
+
+      // illustrations
+      createRoot(document.getElementById('mount-hero')).render(
+        h(StackIllustration, { variant: 'hero', outerColours: outer.map((id) => hex[id]), innerColours: inner.map((id) => hex[id]), title: 'A stack of amber, orange and red rings around a light core', animate: true }),
+      );
+      createRoot(document.getElementById('mount-schematic')).render(
+        h(StackIllustration, { variant: 'schematic', outerColours: outer.map((id) => hex[id]), innerColours: inner.map((id) => hex[id]), title: 'To-scale drawing of the lamp' }),
+      );
+    </script>
+  </body>
+</html>

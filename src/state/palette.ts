@@ -6,15 +6,15 @@
 import type { PetgColour } from '../geometry';
 
 export const DEFAULT_PALETTE: readonly PetgColour[] = Object.freeze([
-  { id: 'clr', name: 'Clear', hex: '#fff4e0' },
-  { id: 'smk', name: 'Smoke', hex: '#9a9a9a' },
-  { id: 'amb', name: 'Amber', hex: '#ffb340' },
-  { id: 'org', name: 'Orange', hex: '#ff7a1a' },
-  { id: 'red', name: 'Red', hex: '#ff3b2e' },
-  { id: 'vio', name: 'Violet', hex: '#8a5cff' },
-  { id: 'blu', name: 'Blue', hex: '#2f7cff' },
-  { id: 'tea', name: 'Teal', hex: '#19c6b8' },
-  { id: 'grn', name: 'Green', hex: '#4fd45a' },
+  { id: 'clr', name: 'Clear', hex: '#fff4dc' },
+  { id: 'smk', name: 'Smoke', hex: '#6b625a' },
+  { id: 'amb', name: 'Amber', hex: '#ffa41b' },
+  { id: 'org', name: 'Orange', hex: '#ff6a1f' },
+  { id: 'red', name: 'Red', hex: '#f2363f' },
+  { id: 'vio', name: 'Violet', hex: '#9e5fff' },
+  { id: 'blu', name: 'Blue', hex: '#3d7bff' },
+  { id: 'tea', name: 'Teal', hex: '#00b3a6' },
+  { id: 'grn', name: 'Green', hex: '#33c24d' },
 ] as PetgColour[]).map((c) => Object.freeze(c)) as readonly PetgColour[];
 
 export const DEFAULT_COLOUR_IDS: readonly string[] = DEFAULT_PALETTE.map((c) => c.id);
@@ -23,7 +23,7 @@ export const DEFAULT_COLOUR_IDS: readonly string[] = DEFAULT_PALETTE.map((c) => 
 export const MAX_COLOURS = 16;
 export const MAX_NAME_LENGTH = 20;
 /** Used when a palette entry carries an unusable hex. */
-export const FALLBACK_HEX = '#9a9a9a';
+export const FALLBACK_HEX = '#6b625a';
 
 /** Fresh mutable copy of the default palette. */
 export function defaultPalette(): PetgColour[] {

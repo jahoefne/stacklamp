@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="4" fill="#1a1a1a"/><rect x="12" y="4" width="8" height="6" fill="#f2b705"/><rect x="12" y="11" width="8" height="6" fill="#e5391f"/><rect x="12" y="18" width="8" height="6" fill="#1f6fe5"/><rect x="8" y="25" width="16" height="3" fill="#eee"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <title>stacklamp</title>
+  <rect width="32" height="32" fill="#1B1814"/>
+  <rect x="8" y="4" width="16" height="3" fill="#F4EEE1"/>
+  <rect x="10" y="8" width="12" height="4" fill="#9E5FFF"/>
+  <rect x="10" y="12" width="12" height="4" fill="#F2363F"/>
+  <rect x="10" y="16" width="12" height="4" fill="#FF6A1F"/>
+  <rect x="10" y="20" width="12" height="4" fill="#FFA41B"/>
+  <rect x="15" y="8" width="2" height="16" fill="#FFF8EC" opacity="0.8"/>
+  <rect x="6" y="25" width="20" height="3" fill="#F4EEE1"/>
+</svg>
