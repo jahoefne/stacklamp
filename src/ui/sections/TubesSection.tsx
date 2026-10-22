@@ -1,4 +1,6 @@
 import type { ReactElement } from 'react';
+import { nozzleOf } from '../../geometry';
+import type { NozzlePreset } from '../../geometry';
 import { useDims, useLamp, useLampActions } from '../../state';
 import type { LampState } from '../../state';
 import { Checkbox } from '../primitives/Checkbox';
@@ -9,11 +11,13 @@ import panel from './panel.module.css';
 
 const selectLinked = (s: LampState): boolean => s.ui.linkSegmentHeights;
 const selectAuto = (s: LampState): boolean => s.config.params.segments.heightMode === 'auto';
+const selectNozzle = (s: LampState): NozzlePreset => nozzleOf(s.config.params);
 
 /** 02 Tubes: diameters, wall, target segment heights. */
 export function TubesSection(): ReactElement {
   const linked = useLamp(selectLinked);
   const auto = useLamp(selectAuto);
+  const nz = useLamp(selectNozzle);
   const d = useDims();
   const { setUi } = useLampActions();
   const heightHint = (fitted: number) =>
@@ -22,7 +26,7 @@ export function TubesSection(): ReactElement {
     <PanelSection id="section-tubes" number={2} title="Tubes">
       <ParamNumberField path="tubes.outerOD" label="Outer tube diameter" />
       <ParamNumberField path="tubes.innerOD" label="Inner tube diameter" />
-      <ParamNumberField path="segments.wall" hint="Equals the vase-mode line width (0.8 mm for a 0.6 mm nozzle)." />
+      <ParamNumberField path="segments.wall" hint={`Equals the vase-mode line width (${nz.wall} mm for your ${nz.label} nozzle).`} />
       <div className={panel.group}>
         <h3 className={panel.groupTitle}>Segment height</h3>
         <ParamNumberField path="segments.outerHeight" hint={heightHint(d.outer.height)} />

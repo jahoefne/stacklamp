@@ -264,6 +264,7 @@ illustration sits under the copy at `min(100%, 360px)` wide.
                                                       │━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━│
                                                       │[04] Base & printer             │
                                                       │ Printer [Bambu Lab … 256 ▾]    │
+                                                      │ Nozzle  [0.6 mm ▾]             │
                                                       │ ▸ Printer tuning               │
                                                       │━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━│
                                                       │ Warnings list (if any)         │
@@ -651,7 +652,9 @@ Buttons are verbs. Say "rings" or "segments" consistently: "segment" in tables a
 | Palette | Add colour · Paint with Amber · ×4 (used on 4 bands) |
 | Generators | Fill: Outer / Inner / Both · Alternate · Gradient · Random · Mirror |
 | Band tile label | Outer band 3 of 11: Amber |
-| Printer tuning | Printer tuning (disclosure) · "The defaults print well on a 0.6 mm nozzle in vase mode." |
+| Nozzle (Base & printer) | Nozzle · 0.4 mm / 0.6 mm / 0.8 mm · "Sets the segment wall to 0.8 mm (one vase-mode line) and 0.3 mm layers in the print plan." |
+| Wall hint | Equals the vase-mode line width (0.8 mm for your 0.6 mm nozzle). |
+| Printer tuning | Printer tuning (disclosure) · "The defaults print well in vase mode (tuned on a 0.6 mm nozzle)." |
 | Warnings (examples) | **Outer segment doesn't fit** 202 mm socket on a 180 mm bed. · **Segments stretched 12 %** Segments are 168 mm instead of 150 mm so the stack meets the rod. · The weight pocket needs tree supports (build plate only). |
 | No warnings | Every part fits your printer. |
 | Download | Download ZIP · Building base… 1 of 7 · Packing ZIP… · Saved stacklamp-1500.zip · 4.2 MB |
@@ -665,7 +668,7 @@ Buttons are verbs. Say "rings" or "segments" consistently: "segment" in tables a
 | Touch overlay | Tap to rotate |
 | Stage hint | Drag to orbit · scroll to zoom |
 | URL clamped | Some values in the link were out of range and were adjusted. |
-| Footer | stacklamp · MIT licence · Source on GitHub · Made for 0.6 mm nozzles and PETG |
+| Footer | stacklamp · MIT licence · Source on GitHub · Made for 0.4–0.8 mm nozzles and PETG |
 
 ---
 

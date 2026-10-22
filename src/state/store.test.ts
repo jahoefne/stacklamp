@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRINTER_PRESETS, defaultParams, deriveDims } from '../geometry';
+import { NOZZLES, PRINTER_PRESETS, defaultParams, deriveDims } from '../geometry';
 import { fitBands } from './bands';
 import { decodeConfig } from './codec';
 import { defaultConfig, defaultUiPrefs } from './config';
@@ -48,14 +48,14 @@ describe('setParam', () => {
     const store = make();
     const { setParam, applyPrinterPreset } = store.getState().actions;
     applyPrinterPreset('bambu-a1-mini');
-    expect(store.getState().config.params.printer).toEqual({ preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 });
+    expect(store.getState().config.params.printer).toEqual({ preset: 'bambu-a1-mini', nozzle: '0.6', bedX: 180, bedY: 180, bedZ: 180 });
     setParam('printer.bedZ', 200);
-    expect(store.getState().config.params.printer).toEqual({ preset: 'custom', bedX: 180, bedY: 180, bedZ: 200 });
+    expect(store.getState().config.params.printer).toEqual({ preset: 'custom', nozzle: '0.6', bedX: 180, bedY: 180, bedZ: 200 });
     applyPrinterPreset('custom');
     expect(store.getState().config.params.printer.bedZ).toBe(200);
     applyPrinterPreset('prusa-mk4');
     const [x, y, z] = PRINTER_PRESETS['prusa-mk4'].bed;
-    expect(store.getState().config.params.printer).toEqual({ preset: 'prusa-mk4', bedX: x, bedY: y, bedZ: z });
+    expect(store.getState().config.params.printer).toEqual({ preset: 'prusa-mk4', nozzle: '0.6', bedX: x, bedY: y, bedZ: z });
   });
 });
 
@@ -68,6 +68,21 @@ describe('enums and presets', () => {
     expect(store.getState().config.params.core).toMatchObject({ kind: 'aluminium-rod', diameter: 20 });
     store.getState().actions.setEnum('printer.preset', 'ender-3');
     expect(store.getState().config.params.printer.bedZ).toBe(250);
+  });
+  it('applyNozzle sets the nozzle and its vase line width as the wall; setEnum delegates; the printer keeps it', () => {
+    const store = make();
+    const a = store.getState().actions;
+    a.setEnum('printer.nozzle', '0.4');
+    expect(store.getState().config.params.printer.nozzle).toBe('0.4');
+    expect(store.getState().config.params.segments.wall).toBe(NOZZLES['0.4'].wall);
+    a.setParam('segments.wall', 0.6);
+    a.applyPrinterPreset('ender-3');
+    expect(store.getState().config.params.printer).toMatchObject({ preset: 'ender-3', nozzle: '0.4' });
+    expect(store.getState().config.params.segments.wall).toBe(0.6);
+    a.applyNozzle('0.8');
+    expect(store.getState().config.params.segments.wall).toBe(NOZZLES['0.8'].wall);
+    a.applyNozzle('0.6');
+    expect(store.getState().config.params.segments.wall).toBe(0.8);
   });
   it('the LED tube drops the strip build-up and the inner slits (no dropped-slits warning); the rod brings the defaults back', () => {
     const store = make();

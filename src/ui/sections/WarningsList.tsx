@@ -17,6 +17,7 @@ const OTHER_LABELS: Record<string, string> = {
   'core.kind': 'core type',
   'segments.heightMode': 'height mode',
   'printer.preset': 'printer',
+  'printer.nozzle': 'nozzle',
   'base.wireRouting': 'cable route',
 };
 

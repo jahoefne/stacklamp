@@ -25,7 +25,7 @@ import { defaultPalette } from '../../src/state/palette';
 import { shareUrl } from '../../src/state/url';
 import { createHandler, type GeometryHandler } from '../../src/worker/handler';
 import { getKernel } from '../helpers/kernel';
-import { CASES, ledTube, withParams } from '../helpers/params';
+import { CASES, ledTube, withNozzle, withParams } from '../helpers/params';
 
 const OUT = fileURLToPath(new URL('../../out/', import.meta.url));
 const CREATED_AT = '2026-10-22T12:00:00.000Z';
@@ -59,6 +59,8 @@ const SAMPLES: SampleCase[] = [
     includeFitTest: false,
   },
   { name: 'stl-defaults', params: defaultParams(), format: 'stl', includeFitTest: false },
+  { name: 'nozzle-04', params: withNozzle('0.4'), format: '3mf', includeFitTest: false },
+  { name: 'nozzle-08', params: withNozzle('0.8'), format: '3mf', includeFitTest: false },
 ];
 
 /** The colour plan and the share link the app would produce for these params. */

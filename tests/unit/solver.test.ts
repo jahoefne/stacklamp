@@ -168,7 +168,7 @@ describe('locked mode', () => {
     const p = withParams((q) => {
       q.segments.heightMode = 'locked';
       q.segments.outerHeight = 250;
-      q.printer = { ...PRINTER_PRESETS['bambu-a1-mini'], preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 };
+      q.printer = { ...q.printer, preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 };
     });
     const d = deriveDims(p);
     expect(d.messages.map((m) => m.code)).toContain('segment-too-tall');
@@ -201,7 +201,7 @@ describe('parameter grid', () => {
                   p.segments.overlap = ov;
                   p.tolerances.segment = c;
                   const bed = PRINTER_PRESETS[printer].bed;
-                  p.printer = { preset: printer, bedX: bed[0], bedY: bed[1], bedZ: bed[2] };
+                  p.printer = { ...p.printer, preset: printer, bedX: bed[0], bedY: bed[1], bedZ: bed[2] };
                 }),
               );
             }

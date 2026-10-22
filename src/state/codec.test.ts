@@ -45,12 +45,26 @@ describe('encodeConfig', () => {
     c.params = { ...c.params, core: { ...c.params.core, kind: 'led-tube', diameter: 28 } };
     expect(encodeConfigAuto(c)).toBe('v=1&cp=l');
     const [bedX, bedY, bedZ] = PRINTER_PRESETS['bambu-a1-mini'].bed;
-    c.params = { ...c.params, printer: { preset: 'bambu-a1-mini', bedX, bedY, bedZ } };
+    c.params = { ...c.params, printer: { ...c.params.printer, preset: 'bambu-a1-mini', bedX, bedY, bedZ } };
     expect(encodeConfigAuto(c)).toBe('v=1&cp=l&pp=a1m');
     expect(decodeOk('v=1&cp=l&pp=a1m').config.params).toEqual(c.params);
     // a non-preset diameter is written
     c.params = setParam(c.params, 'core.diameter', 20);
     expect(encodeConfigAuto(c)).toContain('cd=20');
+  });
+  it('treats the nozzle wall as the default: nz alone sets segments.wall', () => {
+    const c = defaultConfig();
+    c.params = { ...c.params, printer: { ...c.params.printer, nozzle: '0.4' }, segments: { ...c.params.segments, wall: 0.5 } };
+    expect(encodeConfigAuto(c)).toBe('v=1&nz=4');
+    expect(decodeOk('v=1&nz=4').config.params).toEqual(c.params);
+    // a wall of your own is written and wins
+    c.params = setParam(c.params, 'segments.wall', 0.6);
+    expect(encodeConfigAuto(c)).toBe('v=1&nz=4&wt=0.6');
+    expect(decodeOk('v=1&nz=4&wt=0.6').config.params.segments.wall).toBe(0.6);
+    // links from before the nozzle key are the 0.6 mm nozzle with the wall they carry
+    expect(decodeOk('v=1&wt=0.6').config.params.printer.nozzle).toBe('0.6');
+    expect(decodeOk('v=1&wt=0.6').config.params.segments.wall).toBe(0.6);
+    expect(decodeConfig('v=1&nz=9')!.config.params.printer.nozzle).toBe('0.6');
   });
   it('writes painted bands and generators as palette-index chars', () => {
     const c = defaultConfig();

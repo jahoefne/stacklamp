@@ -11,6 +11,8 @@
  * plate clamp prints flange-down (countersink on the bed) and is lifted into
  * the pocket by its placement.
  */
+import { nozzleOf } from './params';
+import { baseShell, coverShell, type ShellSettings } from './print';
 import { solveStacks, type SolvedStacks } from './solver';
 import type { LampParams } from './types';
 
@@ -97,6 +99,8 @@ export interface SegmentSpec {
   clearance: number;
   leadIn: number;
   height: number;
+  /** Vase-mode layer height (from the nozzle). Only the mass estimate reads it. */
+  layer: number;
 }
 
 export interface RingSpec {
@@ -143,6 +147,8 @@ export interface BaseSpec {
     tunnelStart: number;
     tunnelEnd: number;
   };
+  /** Walls, shells and infill the print plan asks for (from the nozzle). Only the mass estimate reads it. */
+  shell: ShellSettings;
 }
 
 export interface SlitSet {
@@ -162,6 +168,8 @@ export interface CoverSpec {
   innerRing: { rIn: number; rOut: number; height: number; leadIn: number };
   boss: { rOut: number; height: number; holeR: number; ceilingZ: number; holeChamfer: number };
   slits: { width: number; outer: SlitSet; inner: SlitSet };
+  /** Walls, shells and infill the print plan asks for (from the nozzle). Only the mass estimate reads it. */
+  shell: ShellSettings;
 }
 
 export interface ClampSpec {
@@ -256,6 +264,7 @@ export function segmentSpec(p: LampParams, D: number, height: number): SegmentSp
     clearance: p.tolerances.segment,
     leadIn: p.segments.rimLeadIn,
     height,
+    layer: nozzleOf(p).layer,
   };
 }
 
@@ -382,6 +391,7 @@ function baseSpec(p: LampParams, b: BaseLayout, ringHeight: number, inner: Segme
       tunnelStart: holeR - rw / 2,
       tunnelEnd: p.base.diameter / 2 + TUNNEL_RIM_OVERSHOOT,
     },
+    shell: baseShell(nozzleOf(p)),
   };
 }
 
@@ -440,6 +450,7 @@ function coverSpec(p: LampParams): CoverSpec {
       outer: slitSet(p.cover.outerSlits, iIn + rw + OUTER_SLIT_MARGIN, oIn - OUTER_SLIT_MARGIN, width, false),
       inner: slitSet(p.cover.innerSlits, bossR + INNER_SLIT_MARGIN, iIn - INNER_SLIT_MARGIN, width, true),
     },
+    shell: coverShell(nozzleOf(p)),
   };
 }
 

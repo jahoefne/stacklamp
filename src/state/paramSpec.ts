@@ -4,7 +4,7 @@
  * against the codec's own keys (v, pal, bi, bo, gi, go).
  */
 import { PARAM_META } from '../geometry';
-import type { CoreKind, EnumParamPath, HeightMode, NumericParamPath, ParamMeta, PrinterId, WireRouting } from '../geometry';
+import type { CoreKind, EnumParamPath, HeightMode, NozzleId, NumericParamPath, ParamMeta, PrinterId, WireRouting } from '../geometry';
 
 /** Numeric parameter → URL key. `Record` makes the compiler enforce completeness. */
 export const NUMERIC_URL_KEYS: Readonly<Record<NumericParamPath, string>> = {
@@ -69,6 +69,7 @@ export interface EnumValueMap {
   'segments.heightMode': HeightMode;
   'base.wireRouting': WireRouting;
   'printer.preset': PrinterId;
+  'printer.nozzle': NozzleId;
 }
 export type EnumValue<P extends EnumParamPath> = EnumValueMap[P];
 
@@ -92,8 +93,15 @@ export const ENUM_SPECS: { readonly [P in EnumParamPath]: EnumSpec<P> } = {
     key: 'pp',
     codes: { 'bambu-256': 'b256', 'bambu-a1-mini': 'a1m', 'prusa-mk4': 'mk4', 'ender-3': 'e3', custom: 'cus' },
   },
+  'printer.nozzle': { path: 'printer.nozzle', key: 'nz', codes: { '0.4': '4', '0.6': '6', '0.8': '8' } },
 };
-export const ENUM_PATHS: readonly EnumParamPath[] = ['core.kind', 'segments.heightMode', 'base.wireRouting', 'printer.preset'];
+export const ENUM_PATHS: readonly EnumParamPath[] = [
+  'core.kind',
+  'segments.heightMode',
+  'base.wireRouting',
+  'printer.preset',
+  'printer.nozzle',
+];
 
 /** Keys the codec uses for things other than params. */
 export const CODEC_KEYS = { version: 'v', palette: 'pal', bandsInner: 'bi', bandsOuter: 'bo', genInner: 'gi', genOuter: 'go' } as const;

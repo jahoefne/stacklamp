@@ -7,22 +7,26 @@
 # Checks per part file:
 #   info    `BambuStudio --info`: the mesh is closed (manifold = yes) and one part.
 #   vase    segments + fit test, as PRINT-PLAN.md says: spiral vase, 1 wall, line width = wall
-#           (read from the config.json next to the file), 0 top/bottom layers, 0 % infill,
-#           0.3 mm layers, brim 5 mm on the outer segment only, elephant-foot 0 (in vase mode it
-#           would pull the single line inward and narrow the socket mouth).
+#           (read from the config.json next to the file), 0 top/bottom layers, 0 % infill, the
+#           nozzle's standard layer height (0.2 / 0.3 / 0.4 mm), brim 5 mm on the outer segment
+#           only, elephant-foot 0 (in vase mode it would pull the single line inward and narrow
+#           the socket mouth).
 #   normal  segments + fit test without vase mode: Arachne wall generator, elephant-foot 0.
 #           (The stock *classic* generator lays two overlapping 0.62 mm loops into a 0.8 mm
 #           wall, ~1.5x the material; with 1 wall at 0.8 it leaves gaps. Arachne prints one
 #           0.8 mm line, like vase mode.)
-#           base: 4 walls, 20 % gyroid, 5/5 shells, tree supports on build plate only, no brim,
-#           elephant-foot 0.15. top-cover: 3 walls, 20 % infill, 0.2 mm layers, no supports, no
-#           brim, elephant-foot 0.15. plate-clamp: 3 walls, 100 % aligned-rectilinear infill, no
+#           base: 4 walls, 20 % gyroid, ~1.5 mm top/bottom shells in whole layers (8 / 5 / 4),
+#           tree supports on build plate only, no brim, elephant-foot 0.15. top-cover: 3 walls,
+#           20 % infill, the nozzle's fine layers (0.2 / 0.2 / 0.24 mm), no supports, no brim,
+#           elephant-foot 0.15. plate-clamp: 3 walls, 100 % aligned-rectilinear infill, no
 #           supports, no brim, elephant-foot 0.15.
-# Machine: Bambu Lab A1 mini 0.6 nozzle when config.json says printer.preset = bambu-a1-mini,
-# otherwise Bambu Lab X1 Carbon 0.6 nozzle, with the matching "0.30mm Standard … 0.6 nozzle"
-# process, Generic PETG and the Textured PEI plate. The bundled system profiles use `inherits`
-# and `include`, which the CLI does not resolve (it falls back to a 200x200x100 bed), so they
-# are flattened into plain JSON first.
+# Machine: Bambu Lab A1 mini when config.json says printer.preset = bambu-a1-mini, otherwise
+# Bambu Lab X1 Carbon, each with the nozzle from printer.nozzle (0.4 / 0.6 / 0.8; 0.6 when the
+# file predates it) and Bambu's matching "0.20mm / 0.30mm / 0.40mm Standard" process, Generic
+# PETG and the Textured PEI plate. The per-nozzle numbers mirror NOZZLES (src/geometry/params.ts)
+# and src/geometry/print.ts. The bundled system profiles use `inherits` and `include`, which the
+# CLI does not resolve (it falls back to a 200x200x100 bed), so they are flattened into plain
+# JSON first.
 # 3MF files are sliced where the file places them (--arrange=0: a part placed off the bed
 # fails). STL files are put at the bed centre with --load-assemble-list, as the GUI does on
 # import (the CLI's auto-arrange keeps a 12 mm margin when supports are on and would reject
@@ -40,7 +44,7 @@
 set -u -o pipefail
 
 if [ $# -lt 1 ] || [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
-  sed -n '2,38p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,43p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 fi
 
@@ -170,9 +174,10 @@ switch (cmd) {
     break;
   }
   case 'config': {
-    // config <part file> → "<printer preset> <segment wall>"
+    // config <part file> → "<printer preset> <segment wall> <nozzle>"
     const cfg = configNextTo(args[0]);
-    process.stdout.write(`${cfg?.params?.printer?.preset ?? 'unknown'} ${cfg?.params?.segments?.wall ?? 0.8}\n`);
+    const printer = cfg?.params?.printer ?? {};
+    process.stdout.write(`${printer.preset ?? 'unknown'} ${cfg?.params?.segments?.wall ?? 0.8} ${printer.nozzle ?? '0.6'}\n`);
     break;
   }
   case 'assemble': {
@@ -276,13 +281,31 @@ now() { perl -MTime::HiRes=time -e 'printf "%.2f", time'; }
 since() { perl -e "printf '%.1f', $(now) - $1"; }
 
 # ---------------------------------------------------------------- profiles
-X1C_MACHINE="Bambu Lab X1 Carbon 0.6 nozzle"
-X1C_PROCESS="0.30mm Standard @BBL X1C 0.6 nozzle"
 X1C_FILAMENT="Generic PETG"
-A1M_MACHINE="Bambu Lab A1 mini 0.6 nozzle"
-A1M_PROCESS="0.30mm Standard @BBL A1M 0.6 nozzle"
 A1M_FILAMENT="Generic PETG @BBL A1M"
 BED="curr_bed_type=Textured PEI Plate"
+
+# nozzle_settings <nozzle> sets LAYER (vase segments, base), FINE (cover) and SHELLS (base
+# top/bottom layers). Mirrors NOZZLES in src/geometry/params.ts and src/geometry/print.ts.
+nozzle_settings() {
+  case "$1" in
+    0.4) LAYER=0.2 FINE=0.2 SHELLS=8 ;;
+    0.8) LAYER=0.4 FINE=0.24 SHELLS=4 ;;
+    *) LAYER=0.3 FINE=0.2 SHELLS=5 ;;
+  esac
+}
+machine_for() { # <tag> <nozzle> → Bambu machine profile name
+  if [ "$1" = a1m ]; then echo "Bambu Lab A1 mini $2 nozzle"; else echo "Bambu Lab X1 Carbon $2 nozzle"; fi
+}
+process_for() { # <tag> <nozzle> → Bambu's Standard process for the nozzle (the 0.4 one has no suffix)
+  local printer=X1C
+  [ "$1" = a1m ] && printer=A1M
+  case "$2" in
+    0.4) echo "0.20mm Standard @BBL $printer" ;;
+    0.8) echo "0.40mm Standard @BBL $printer 0.8 nozzle" ;;
+    *) echo "0.30mm Standard @BBL $printer 0.6 nozzle" ;;
+  esac
+}
 
 flatten() { # flatten <kind> <profile name> <out name> [key=value …] → prints the flattened path
   local kind=$1 name=$2 out=$3
@@ -293,29 +316,37 @@ flatten() { # flatten <kind> <profile name> <out name> [key=value …] → print
   echo "$WORK/profiles/$out.json"
 }
 
-# process_profile <machine tag> <part> <mode> <wall> → flattened process path (cached)
+# machine_profile <machine tag> <nozzle> → flattened machine path (cached)
+machine_profile() {
+  local out="$1-n$2-machine"
+  if [ ! -f "$WORK/profiles/$out.json" ]; then flatten machine "$(machine_for "$1" "$2")" "$out" > /dev/null || return 1; fi
+  echo "$WORK/profiles/$out.json"
+}
+
+# process_profile <machine tag> <nozzle> <part> <mode> <wall> → flattened process path (cached)
 process_profile() {
-  local tag=$1 part=$2 mode=$3 wall=$4 base brim_type=no_brim brim_width=0
-  if [ "$tag" = a1m ]; then base=$A1M_PROCESS; else base=$X1C_PROCESS; fi
+  local tag=$1 nozzle=$2 part=$3 mode=$4 wall=$5 base brim_type=no_brim brim_width=0
+  base=$(process_for "$tag" "$nozzle")
+  nozzle_settings "$nozzle"
   if [ "$part" = outer-segment ]; then brim_type=outer_only; brim_width=5; fi
-  local out="$tag-$part-$mode-w$wall"
+  local out="$tag-n$nozzle-$part-$mode-w$wall"
   if [ -f "$WORK/profiles/$out.json" ]; then echo "$WORK/profiles/$out.json"; return 0; fi
   case "$part:$mode" in
     *segment:vase | fit-test:vase)
       flatten process "$base" "$out" "$BED" brim_type=$brim_type brim_width=$brim_width \
         spiral_mode=1 wall_loops=1 top_shell_layers=0 bottom_shell_layers=0 sparse_infill_density=0% \
-        enable_support=0 layer_height=0.3 elefant_foot_compensation=0 enable_arc_fitting=0 \
+        enable_support=0 layer_height=$LAYER elefant_foot_compensation=0 enable_arc_fitting=0 \
         line_width="$wall" outer_wall_line_width="$wall" inner_wall_line_width="$wall" initial_layer_line_width="$wall" ;;
     *segment:normal | fit-test:normal)
       flatten process "$base" "$out" "$BED" brim_type=$brim_type brim_width=$brim_width \
         wall_generator=arachne enable_support=0 enable_arc_fitting=0 elefant_foot_compensation=0 ;;
     base:normal)
       flatten process "$base" "$out" "$BED" brim_type=no_brim brim_width=0 wall_loops=4 \
-        sparse_infill_density=20% sparse_infill_pattern=gyroid top_shell_layers=5 bottom_shell_layers=5 \
+        sparse_infill_density=20% sparse_infill_pattern=gyroid top_shell_layers=$SHELLS bottom_shell_layers=$SHELLS \
         enable_support=1 "support_type=tree(auto)" support_on_build_plate_only=1 elefant_foot_compensation=0.15 ;;
     top-cover:normal)
       flatten process "$base" "$out" "$BED" brim_type=no_brim brim_width=0 wall_loops=3 \
-        sparse_infill_density=20% layer_height=0.2 enable_support=0 elefant_foot_compensation=0.15 ;;
+        sparse_infill_density=20% layer_height=$FINE enable_support=0 elefant_foot_compensation=0.15 ;;
     plate-clamp:normal)
       # 100 % infill is only accepted with the aligned rectilinear pattern (grid, cubic, gyroid are rejected)
       flatten process "$base" "$out" "$BED" brim_type=no_brim brim_width=0 wall_loops=3 \
@@ -325,9 +356,7 @@ process_profile() {
   esac
 }
 
-X1C_M=$(flatten machine "$X1C_MACHINE" x1c-machine) || exit 2
 X1C_F=$(flatten filament "$X1C_FILAMENT" x1c-filament) || exit 2
-A1M_M=$(flatten machine "$A1M_MACHINE" a1m-machine) || exit 2
 A1M_F=$(flatten filament "$A1M_FILAMENT" a1m-filament) || exit 2
 
 record() { printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$@" >> "$SUMMARY"; }
@@ -347,12 +376,10 @@ while IFS= read -r file; do
   fname=$(basename "$file")
   part=${fname%.*}
   ext=${fname##*.}
-  read -r preset wall <<< "$(helper config "$file")"
-  if [ "$preset" = bambu-a1-mini ]; then
-    tag=a1m machine=$A1M_M filament=$A1M_F machine_name=$A1M_MACHINE
-  else
-    tag=x1c machine=$X1C_M filament=$X1C_F machine_name=$X1C_MACHINE
-  fi
+  read -r preset wall nozzle <<< "$(helper config "$file")"
+  if [ "$preset" = bambu-a1-mini ]; then tag=a1m filament=$A1M_F; else tag=x1c filament=$X1C_F; fi
+  machine_name=$(machine_for "$tag" "$nozzle")
+  machine=$(machine_profile "$tag" "$nozzle") || exit 2
 
   # info: closed, single-part mesh; its height is the reference for the G-code
   run="$WORK/$case_name/$part.info"
@@ -371,7 +398,7 @@ while IFS= read -r file; do
     *) modes="normal" ;;
   esac
   for mode in $modes; do
-    process=$(process_profile "$tag" "$part" "$mode" "$wall") || exit 2
+    process=$(process_profile "$tag" "$nozzle" "$part" "$mode" "$wall") || exit 2
     run="$WORK/$case_name/$part.$mode"
     mkdir -p "$run"
     name="$part.$mode.3mf"

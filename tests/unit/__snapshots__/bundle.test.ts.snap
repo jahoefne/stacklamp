@@ -78,10 +78,10 @@ Reopen this lamp: https://jahoefne.github.io/stacklamp/#v=1
 | base.3mf | Base | 1 | any (opaque recommended) | 61,550 | 1574.7 | 1999.9 | 775.0 | 775 |
 | inner-segment.3mf | Inner segment | 11 | Clear × 6, Amber × 5 | 4,000 | 23.1 | 29.3 | 26.9 | 296 |
 | outer-segment.3mf | Outer segment | 11 | Amber × 4, Teal × 4, Clear × 3 | 12,800 | 77.5 | 98.4 | 90.5 | 995 |
-| top-cover.3mf | Top cover | 1 | any (opaque recommended) | 33,408 | 131.1 | 166.5 | 125.5 | 125 |
+| top-cover.3mf | Top cover | 1 | any (opaque recommended) | 33,408 | 131.1 | 166.5 | 132.7 | 133 |
 | plate-clamp.3mf | Plate clamp | 1 | any (opaque recommended) | 2,304 | 5.8 | 7.3 | 7.3 | 7 |
 
-Total ≈ 2199 g / 720 m of 1.75 mm PETG (density 1.27 g/cm³). The estimates are what the slicer extrudes with the settings below: vase lines with rounded flanks for the segments, walls + 20 % infill for the base and cover, the plate clamp solid; the base includes ≈ 58 g of tree supports.
+Total ≈ 2206 g / 722 m of 1.75 mm PETG (density 1.27 g/cm³). The estimates are what the slicer extrudes with the settings below: vase lines with rounded flanks for the segments, walls + 20 % infill for the base and cover, the plate clamp solid; the base includes ≈ 58 g of tree supports.
 
 ### Filament per colour
 
@@ -123,7 +123,7 @@ Slicers ignore the colours stored in the 3MF files (they are a viewer hint only)
 
 ## Slicer settings
 
-- All parts: 0.6 mm nozzle, PETG at 240–250 °C, bed 70–80 °C on the **Textured PEI plate** (Bambu Studio's Generic PETG profile has no Cool Plate temperature).
+- All parts: 0.6 mm nozzle, 0.3 mm layers unless noted, PETG at 240–250 °C, bed 70–80 °C on the **Textured PEI plate** (Bambu Studio's Generic PETG profile has no Cool Plate temperature).
 - One object per plate, left where the file places it (centred on the bed).
 
 ### Segments — spiral vase
@@ -140,7 +140,7 @@ Slicers ignore the colours stored in the 3MF files (they are a viewer hint only)
 ### Base — normal mode
 
 - Print top-up, as exported, and **keep it centred** on the bed: Bambu Studio's auto-arrange keeps a margin around parts with supports and refuses a 240 mm base on a 256 mm bed.
-- 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers, elephant-foot compensation 0.15 mm.
+- 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers (0.3 mm), elephant-foot compensation 0.15 mm.
 - **Tree supports, on build plate only**: the 158 mm plate pocket in the underside has a flat ceiling. The Ø 27 mm boss hanging from its middle ends in a 45° tip and needs only a small support under its flat; the cable tunnel has a 45° teardrop roof and needs none.
 
 ### Top cover — normal mode
@@ -223,6 +223,7 @@ exports[`export ZIP > documents (snapshot) > config.json 1`] = `
     },
     "printer": {
       "preset": "bambu-256",
+      "nozzle": "0.6",
       "bedX": 256,
       "bedY": 256,
       "bedZ": 250

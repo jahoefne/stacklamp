@@ -49,7 +49,8 @@ done {fileName} | error {message}`), `s.notice` (`{ id, kind: info|error, text }
 
 - Params: `setParam(path, v)` (rounds to precision, clamps; linked segment heights; editing a
   bed size switches the printer to `custom`), `setEnum(path, v)`, `applyCorePreset(kind)`,
-  `applyPrinterPreset(id)`, `setHeightMode(mode)`.
+  `applyPrinterPreset(id)`, `applyNozzle(id)` (`'0.4' | '0.6' | '0.8'`; also sets
+  `segments.wall` to the nozzle's vase line width from `NOZZLES`), `setHeightMode(mode)`.
 - Colours: `paintBand(stack, index, colourId = ui.brush)` (clears that stack's generator; a
   repeated paint of the same colour does nothing, so drag-paint can call it freely),
   `applyGenerator('alternate' | 'gradient' | 'random')` (uses `ui.mix` on `ui.genTarget`),
@@ -77,7 +78,7 @@ A finished or failed `exportJob` resets to `idle` when the config changes.
 
 `#v=1&<key>=<value>…` with only non-default values, so the default lamp is `#v=1`. Numeric keys:
 `NUMERIC_URL_KEYS` (paramSpec.ts), e.g. `rl` rod length, `oo` outer OD, `ih`/`oh` segment
-heights. Enums: `cp hm wr pp`. Colours: `pal`, `bi`/`bo` (bands), `gi`/`go` (generators). Keys
+heights. Enums: `cp hm wr pp nz`. Colours: `pal`, `bi`/`bo` (bands), `gi`/`go` (generators). Keys
 are never renamed. `decodeConfig` never throws, and its `issues` explain anything it clamped or
 ignored. On load and on a pasted link they appear as an info notice.
 

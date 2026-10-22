@@ -15,7 +15,7 @@ import {
   type SegmentSpec,
 } from './layout';
 import { PART_LABELS, bedFitCode, errorMessage, message, sortMessages, zFitCode } from './messages';
-import { PARAM_META } from './params';
+import { NOZZLES, NOZZLE_IDS, PARAM_META, nozzleOf } from './params';
 import { flipAt, identity, translateZ } from './placements';
 import { profileProblem } from './profile';
 import { baseProfile } from './profiles/base';
@@ -320,13 +320,22 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
       message('outer-slits-dropped', 'The outer air slits do not fit between the cover rings and were left out.', 'cover.outerSlits'),
     );
   }
-  if (w < 0.5 || w > 1.0) {
+  const nz = nozzleOf(p);
+  const [wMin, wMax] = nz.wallRange;
+  if (w < wMin - 1e-9 || w > wMax + 1e-9) {
+    const i = NOZZLE_IDS.indexOf(nz.id);
+    const smaller = i > 0 ? NOZZLES[NOZZLE_IDS[i - 1]!] : null;
+    const bigger = i < NOZZLE_IDS.length - 1 ? NOZZLES[NOZZLE_IDS[i + 1]!] : null;
     msgs.push(
       message(
         'vase-wall',
-        w < 0.5
-          ? `A ${f2(w)} mm wall is very thin for vase mode; use a 0.4 mm nozzle and expect fragile segments.`
-          : `A ${f2(w)} mm wall is wider than a 0.6 mm nozzle prints in vase mode; use a 0.8 mm nozzle or print the segments with 2 walls.`,
+        w < wMin
+          ? `A ${f2(w)} mm wall is thinner than a ${nz.label} nozzle prints in vase mode; raise it to at least ${f2(wMin)} mm${
+              smaller ? ` or switch to a ${smaller.label} nozzle` : ''
+            }.`
+          : `A ${f2(w)} mm wall is wider than a ${nz.label} nozzle prints in vase mode; keep it at most ${f2(wMax)} mm, ${
+              bigger ? `switch to a ${bigger.label} nozzle ` : ''
+            }or print the segments with 2 walls.`,
         'segments.wall',
       ),
     );

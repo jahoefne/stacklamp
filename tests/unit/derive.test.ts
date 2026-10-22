@@ -6,10 +6,10 @@ import { describe, expect, it } from 'vitest';
 import { deriveDims } from '../../src/geometry/derive';
 import { partsKey } from '../../src/geometry/keys';
 import { MESSAGE_CODES } from '../../src/geometry/messages';
-import { defaultParams } from '../../src/geometry/params';
+import { NOZZLES, NOZZLE_IDS, defaultParams } from '../../src/geometry/params';
 import { applyToPoint } from '../../src/geometry/placements';
 import type { LampParams } from '../../src/geometry/types';
-import { CASES, ledTube, withParams } from '../helpers/params';
+import { CASES, ledTube, withNozzle, withParams } from '../helpers/params';
 
 const codes = (p: LampParams) => deriveDims(p).messages.map((m) => m.code);
 
@@ -37,14 +37,14 @@ describe('messages', () => {
   });
 
   it('errors come first', () => {
-    const d = deriveDims(withParams((p) => (p.printer = { preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 })));
+    const d = deriveDims(withParams((p) => (p.printer = { ...p.printer, preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 })));
     const sev = d.messages.map((m) => m.severity);
     expect(sev[0]).toBe('error');
     expect(sev.indexOf('info')).toBeGreaterThan(sev.lastIndexOf('error'));
   });
 
   it('small printers report the parts that do not fit', () => {
-    const c = codes(withParams((p) => (p.printer = { preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 })));
+    const c = codes(withParams((p) => (p.printer = { ...p.printer, preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 })));
     expect(c).toEqual(expect.arrayContaining(['bed-fit-base', 'bed-fit-outer-segment', 'bed-fit-top-cover']));
     expect(c).not.toContain('bed-fit-inner-segment');
   });
@@ -117,10 +117,36 @@ describe('messages', () => {
     expect(c).toContain('profile-invalid');
   });
 
-  it('vase wall warning outside 0.5–1.0', () => {
-    expect(codes(withParams((p) => (p.segments.wall = 0.4)))).toContain('vase-wall');
-    expect(codes(withParams((p) => (p.segments.wall = 1.5)))).toContain('vase-wall');
+  it('vase wall warning outside the nozzle range (0.5–1.0 mm on the 0.6 nozzle)', () => {
+    expect(codes(withParams((p) => (p.segments.wall = 0.45)))).toContain('vase-wall');
+    expect(codes(withParams((p) => (p.segments.wall = 1.05)))).toContain('vase-wall');
+    expect(codes(withParams((p) => (p.segments.wall = 0.5)))).not.toContain('vase-wall');
+    expect(codes(withParams((p) => (p.segments.wall = 1)))).not.toContain('vase-wall');
     expect(codes(defaultParams())).not.toContain('vase-wall');
+    // every nozzle accepts its own wall and the top of its range, not more
+    for (const id of NOZZLE_IDS) {
+      const hi = NOZZLES[id].wallRange[1];
+      const at = (wall: number) =>
+        codes(
+          withParams((p) => {
+            p.printer.nozzle = id;
+            p.segments.wall = wall;
+          }),
+        );
+      expect(codes(withNozzle(id)), id).not.toContain('vase-wall');
+      expect(at(hi), id).not.toContain('vase-wall');
+      expect(at(hi + 0.05), id).toContain('vase-wall');
+    }
+    // the text names the neighbouring nozzle when there is one
+    const text = (mutate: (p: LampParams) => void) => deriveDims(withParams(mutate)).messages.find((m) => m.code === 'vase-wall')?.text;
+    expect(text((p) => (p.segments.wall = 1.2))).toContain('switch to a 0.8 mm nozzle');
+    expect(text((p) => (p.segments.wall = 0.45))).toContain('switch to a 0.4 mm nozzle');
+    expect(
+      text((p) => {
+        p.printer.nozzle = '0.8';
+        p.segments.wall = 1.5;
+      }),
+    ).not.toContain('switch');
   });
 
   it('segment deviation beyond maxDeviation', () => {
@@ -218,6 +244,8 @@ describe('partsKey', () => {
   });
   it('changes when a mesh changes', () => {
     expect(partsKey(withParams((p) => (p.cover.slitWidth = 4)))).not.toBe(base);
+    // the nozzle changes no mesh, but the specs carry its layer height and shells for the mass estimates
+    expect(partsKey(withParams((p) => (p.printer.nozzle = '0.4')))).not.toBe(base);
     // the plate bore sizes the boss and the clamp
     expect(partsKey(withParams((p) => (p.plate.bore = 40)))).not.toBe(base);
     expect(partsKey(withParams((p) => (p.core.length = 1200)))).not.toBe(base);

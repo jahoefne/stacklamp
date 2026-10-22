@@ -4,10 +4,11 @@
  * Format (v1). Sparse: only values that differ from their reference are written, so the
  * default lamp is exactly `v=1`. Keys are never renamed (see paramSpec.ts for the table).
  * - `v`            format version (CONFIG_VERSION).
- * - enum keys      `cp hm wr pp` with the one-word codes from ENUM_SPECS.
+ * - enum keys      `cp hm wr pp nz` with the one-word codes from ENUM_SPECS.
  * - numeric keys   shortest decimal at the field's precision. The reference for
- *                  `core.diameter` is the core preset's diameter and for `printer.bed*` the
- *                  printer preset's bed (so `pp=a1m` alone means a 180³ bed).
+ *                  `core.diameter` is the core preset's diameter, for `printer.bed*` the
+ *                  printer preset's bed (so `pp=a1m` alone means a 180³ bed) and for
+ *                  `segments.wall` the nozzle's vase line width (`nz=4` alone: 0.5 mm).
  * - `pal`          only when the palette ≠ DEFAULT_PALETTE: `name~rrggbb,…` (names sanitised
  *                  to `[A-Za-z0-9 -]{1,20}`, space written as '+').
  * - `bi`, `bo`     fitted bands, one base-36 char per band = palette index, bottom → top.
@@ -19,7 +20,7 @@
  *                  A stack whose bands + generator equal the default (with the default
  *                  palette) is omitted entirely.
  */
-import { CORE_PRESETS, PRINTER_PRESETS, defaultParams, deriveDims, getParam, setParam } from '../geometry';
+import { CORE_PRESETS, PRINTER_PRESETS, defaultParams, deriveDims, getParam, nozzleOf, setParam } from '../geometry';
 import type { LampParams, PetgColour } from '../geometry';
 import { bandsEqual, fitBands } from './bands';
 import { CONFIG_VERSION, DEFAULT_INNER_BANDS, STACKS, defaultGen } from './config';
@@ -74,7 +75,7 @@ export function countsFor(params: LampParams): BandCounts {
 
 /**
  * Reference values for sparse numeric encoding: the defaults with `p`'s enum choices applied
- * and the values those choices imply (core preset diameter, printer preset bed).
+ * and the values those choices imply (core preset diameter, printer preset bed, nozzle wall).
  */
 export function referenceParams(p: LampParams): LampParams {
   let r = defaultParams();
@@ -84,7 +85,11 @@ export function referenceParams(p: LampParams): LampParams {
 
 function applyPresetImplied(r: LampParams): LampParams {
   const core = CORE_PRESETS[r.core.kind];
-  const out: LampParams = { ...r, core: { ...r.core, diameter: core.diameter } };
+  const out: LampParams = {
+    ...r,
+    core: { ...r.core, diameter: core.diameter },
+    segments: { ...r.segments, wall: nozzleOf(r).wall },
+  };
   if (r.printer.preset !== 'custom') {
     const [bedX, bedY, bedZ] = PRINTER_PRESETS[r.printer.preset].bed;
     out.printer = { ...r.printer, bedX, bedY, bedZ };

@@ -3,8 +3,8 @@
  * edge cases across the parameter ranges. Every set is expected to derive
  * without errors unless `expectErrors` lists the codes it should produce.
  */
-import { defaultParams } from '../../src/geometry/params';
-import type { LampParams } from '../../src/geometry/types';
+import { NOZZLES, defaultParams } from '../../src/geometry/params';
+import type { LampParams, NozzleId } from '../../src/geometry/types';
 
 export interface ParamCase {
   name: string;
@@ -23,6 +23,13 @@ export const ledTube = (): LampParams =>
   withParams((p) => {
     p.core.kind = 'led-tube';
     p.core.diameter = 28;
+  });
+
+/** The defaults on another nozzle, with the wall the app sets for it. */
+export const withNozzle = (id: NozzleId): LampParams =>
+  withParams((p) => {
+    p.printer.nozzle = id;
+    p.segments.wall = NOZZLES[id].wall;
   });
 
 export const CASES: ParamCase[] = [
@@ -56,6 +63,8 @@ export const CASES: ParamCase[] = [
   { name: 'clearance 0.4', params: withParams((p) => (p.tolerances.segment = 0.4)) },
   { name: 'wall 0.6', params: withParams((p) => (p.segments.wall = 0.6)) },
   { name: 'wall 1.2', params: withParams((p) => (p.segments.wall = 1.2)) },
+  { name: 'nozzle 0.4', params: withNozzle('0.4') },
+  { name: 'nozzle 0.8', params: withNozzle('0.8') },
   { name: 'lead-in 0.4', params: withParams((p) => (p.segments.rimLeadIn = 0.4)) },
   { name: 'lead-in 2', params: withParams((p) => (p.segments.rimLeadIn = 2)) },
   {
@@ -72,13 +81,13 @@ export const CASES: ParamCase[] = [
     params: withParams((p) => {
       p.tubes.outerOD = 240;
       p.base.diameter = 300;
-      p.printer = { preset: 'custom', bedX: 320, bedY: 320, bedZ: 320 };
+      p.printer = { ...p.printer, preset: 'custom', bedX: 320, bedY: 320, bedZ: 320 };
     }),
   },
   {
     name: 'A1 mini lamp',
     params: withParams((p) => {
-      p.printer = { preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 };
+      p.printer = { ...p.printer, preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 };
       p.tubes.outerOD = 150;
       p.base.diameter = 170;
       p.plate.od = 120;

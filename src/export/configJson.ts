@@ -53,6 +53,8 @@ export const LampParamsSchema = z.object({
   }),
   printer: z.object({
     preset: z.enum(['bambu-256', 'bambu-a1-mini', 'prusa-mk4', 'ender-3', 'custom']),
+    // added later: files written before it was exported for the 0.6 mm nozzle
+    nozzle: z.enum(['0.4', '0.6', '0.8']).default('0.6'),
     bedX: n,
     bedY: n,
     bedZ: n,

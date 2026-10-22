@@ -17,7 +17,7 @@ export function Footer(): ReactElement {
             Source on GitHub
           </a>
           <span aria-hidden="true"> · </span>
-          <span>Made for 0.6 mm nozzles and PETG</span>
+          <span>Made for 0.4–0.8 mm nozzles and PETG</span>
         </p>
         <p className={styles.safety}>Low-voltage LED strips only; mind PETG's ~80 °C softening point.</p>
       </div>

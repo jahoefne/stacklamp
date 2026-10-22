@@ -6,6 +6,8 @@ import type {
   CorePreset,
   CoreKind,
   LampParams,
+  NozzleId,
+  NozzlePreset,
   NumericParamPath,
   ParamMeta,
   PrinterId,
@@ -25,6 +27,23 @@ export const PRINTER_PRESETS: Record<PrinterId, PrinterPreset> = {
   'ender-3': { id: 'ender-3', label: 'Creality Ender 3 (220 × 220 × 250)', bed: [220, 220, 250] },
   custom: { id: 'custom', label: 'Custom bed size', bed: [256, 256, 256] },
 };
+
+/**
+ * Nozzle sizes. Choosing one sets `segments.wall` to its vase-mode line width; its layer
+ * heights, normal-mode line width and vase wall range drive PRINT-PLAN.md, the mass
+ * estimates and the `vase-wall` warning. Line widths and standard layer heights are Bambu
+ * Studio's per-nozzle defaults (the 0.20 / 0.30 / 0.40 mm Standard profiles); the walls are
+ * 1.25–1.33 × the nozzle, the range 0.85–1.65 × (the 0.6 mm row is the calibrated original).
+ */
+export const NOZZLES: Record<NozzleId, NozzlePreset> = {
+  '0.4': { id: '0.4', label: '0.4 mm', diameter: 0.4, wall: 0.5, wallRange: [0.35, 0.6], layer: 0.2, fineLayer: 0.2, lineWidth: 0.42 },
+  '0.6': { id: '0.6', label: '0.6 mm', diameter: 0.6, wall: 0.8, wallRange: [0.5, 1.0], layer: 0.3, fineLayer: 0.2, lineWidth: 0.62 },
+  '0.8': { id: '0.8', label: '0.8 mm', diameter: 0.8, wall: 1.0, wallRange: [0.7, 1.3], layer: 0.4, fineLayer: 0.24, lineWidth: 0.82 },
+};
+/** Nozzle ids, smallest first. */
+export const NOZZLE_IDS: readonly NozzleId[] = ['0.4', '0.6', '0.8'];
+/** The nozzle preset of `p`; an unknown id falls back to 0.6 mm (the calibrated default). */
+export const nozzleOf = (p: LampParams): NozzlePreset => NOZZLES[p.printer.nozzle] ?? NOZZLES['0.6'];
 
 export function defaultParams(): LampParams {
   return {
@@ -70,7 +89,7 @@ export function defaultParams(): LampParams {
       innerSlits: 8,
       slitWidth: 3,
     },
-    printer: { preset: 'bambu-256', bedX: 256, bedY: 256, bedZ: 250 },
+    printer: { preset: 'bambu-256', nozzle: '0.6', bedX: 256, bedY: 256, bedZ: 250 },
     tolerances: { segment: 0.25, core: 0.3, plateRadial: 1.5, plateDepth: 1 },
   };
 }

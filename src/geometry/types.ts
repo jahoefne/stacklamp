@@ -8,6 +8,8 @@ export type CoreKind = 'aluminium-rod' | 'led-tube';
 export type HeightMode = 'auto' | 'locked';
 export type WireRouting = 'auto' | 'beside-collar' | 'through-socket';
 export type PrinterId = 'bambu-256' | 'bambu-a1-mini' | 'prusa-mk4' | 'ender-3' | 'custom';
+/** Nozzle diameters the print plan has settings for (see NOZZLES). */
+export type NozzleId = '0.4' | '0.6' | '0.8';
 
 export interface LampParams {
   version: 1;
@@ -56,7 +58,7 @@ export interface LampParams {
     innerSlits: number;
     slitWidth: number;
   };
-  printer: { preset: PrinterId; bedX: number; bedY: number; bedZ: number };
+  printer: { preset: PrinterId; nozzle: NozzleId; bedX: number; bedY: number; bedZ: number };
   tolerances: { segment: number; core: number; plateRadial: number; plateDepth: number };
 }
 
@@ -108,7 +110,7 @@ export type NumericParamPath =
   | 'tolerances.plateRadial'
   | 'tolerances.plateDepth';
 
-export type EnumParamPath = 'core.kind' | 'segments.heightMode' | 'base.wireRouting' | 'printer.preset';
+export type EnumParamPath = 'core.kind' | 'segments.heightMode' | 'base.wireRouting' | 'printer.preset' | 'printer.nozzle';
 
 export type ParamGroup = 'core' | 'tubes' | 'segments' | 'base' | 'plate' | 'cover' | 'printer' | 'tolerances';
 
@@ -137,6 +139,24 @@ export interface PrinterPreset {
   id: PrinterId;
   label: string;
   bed: [number, number, number];
+}
+/** One nozzle size and the slicer settings that follow from it (PRINT-PLAN.md, mass estimates). */
+export interface NozzlePreset {
+  id: NozzleId;
+  /** "0.6 mm" */
+  label: string;
+  /** Nozzle diameter, mm. */
+  diameter: number;
+  /** Default segment wall = the vase-mode line width, mm. Applied when the nozzle is chosen. */
+  wall: number;
+  /** Segment walls that print reliably in vase mode, mm; outside this range the engine warns (`vase-wall`). */
+  wallRange: [number, number];
+  /** Standard layer height (segments, fit test, base), mm. */
+  layer: number;
+  /** Finer layer height for the cover's visible top, mm. */
+  fineLayer: number;
+  /** The slicer's default line width for normal-mode walls (base, cover, clamp), mm. */
+  lineWidth: number;
 }
 
 export type PartId = 'base' | 'inner-segment' | 'outer-segment' | 'top-cover' | 'plate-clamp' | 'fit-test';

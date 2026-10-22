@@ -2,7 +2,9 @@
  * Cache keys. `partsKey(params)` changes exactly when a part mesh (or a part's
  * copy count) would change: it is the canonical JSON of the part specs, which
  * are all the builders read. The printer preset only matters through bedZ
- * (the maximum segment height), which the specs already reflect.
+ * (the maximum segment height), which the specs already reflect. The nozzle
+ * is in the specs too (layer height, shells): it changes the mass estimates,
+ * not the geometry, so a nozzle change rebuilds the parts.
  */
 import { derive } from './derive';
 import type { PartSpecs } from './layout';

@@ -3,10 +3,11 @@
  * slicer settings. Generated from the request, the derived dimensions and the
  * export-quality meshes. Deterministic (the timestamp comes from the request).
  */
-import { PRINTER_PRESETS } from '../geometry/params';
+import { PRINTER_PRESETS, nozzleOf } from '../geometry/params';
 import { computeBom, FILAMENT_DIAMETER_MM, PETG_DENSITY_G_CM3 } from '../geometry/bom';
 import { supportVolume } from '../geometry/estimate';
 import { PART_LABELS } from '../geometry/messages';
+import { BASE_WALLS, COVER_WALLS, baseShellLayers } from '../geometry/print';
 import type { DerivedDims, ExportRequest, PartId, PartMesh } from '../geometry/types';
 import { colourById, colourSummary } from './colours';
 import { fixed, int, num, percent, table, yesNo } from './format';
@@ -136,10 +137,15 @@ export function printPlanMarkdown(input: DocInput): string {
   const w = num(p.segments.wall);
   const c = p.tolerances.segment;
   const bedXY = Math.min(p.printer.bedX, p.printer.bedY);
+  const nz = nozzleOf(p);
+  const shells = baseShellLayers(nz);
+  // the classic wall generator lays two line-width loops into the single wall
+  const loops = (2 * nz.lineWidth) / p.segments.wall;
+  const classic = loops >= 1.2 ? `about ${num(Math.round(loops * 2) / 2)}× the material and oversized` : 'oversized';
   out.push('## Slicer settings', '');
   out.push(
     [
-      '- All parts: 0.6 mm nozzle, PETG at 240–250 °C, bed 70–80 °C on the **Textured PEI plate** (Bambu Studio\'s Generic PETG profile has no Cool Plate temperature).',
+      `- All parts: ${nz.label} nozzle, ${num(nz.layer)} mm layers unless noted, PETG at 240–250 °C, bed 70–80 °C on the **Textured PEI plate** (Bambu Studio's Generic PETG profile has no Cool Plate temperature).`,
       '- One object per plate, left where the file places it (centred on the bed).',
       ...(req.format === 'stl'
         ? ['- STL files store float32 coordinates: on import a slicer may weld a few dozen sliver triangles of the base and cover. That is harmless.']
@@ -152,11 +158,11 @@ export function printPlanMarkdown(input: DocInput): string {
     [
       `- Line width = wall = ${w} mm: in Bambu Studio set Quality → Line width → **Outer wall** and **First layer** to ${w} mm.`,
       '- Spiral vase mode on: 1 wall, 0 top and 0 bottom layers, 0 % infill.',
-      '- Layer height 0.3 mm, part cooling fan 30–50 %.',
+      `- Layer height ${num(nz.layer)} mm, part cooling fan 30–50 %.`,
       '- Brim 5 mm on the outer segments (tall and thin); none needed on the inner ones.',
       `- **Elephant-foot compensation 0.** In vase mode it pulls the single line inward and narrows the socket mouth: 0.15 mm would leave ${num(Math.max(0, c - 0.15))} mm instead of ${num(c)} mm clearance around the rim below.`,
       '- Print the foot (socket) down, as exported.',
-      '- Normal (non-vase) mode works too with 1 wall and **Wall generator = Arachne**: the classic generator prints the wall as two overlapping 0.62 mm loops, about 1.5× the material and oversized.',
+      `- Normal (non-vase) mode works too with 1 wall and **Wall generator = Arachne**: the classic generator prints the wall as two overlapping ${num(nz.lineWidth)} mm loops, ${classic}.`,
       ...(req.includeFitTest
         ? [
             `- **Print the fit test first** (2 rings): push one ring's foot over the other's rim. It should slide on with light pressure and sit on the 45° shoulder without wobble. Too tight → raise the joint clearance by 0.05 mm (now ${num(c)} mm); loose → lower it.`,
@@ -175,7 +181,7 @@ export function printPlanMarkdown(input: DocInput): string {
           ? `: Bambu Studio's auto-arrange keeps a margin around parts with supports and refuses a ${num(p.base.diameter)} mm base on a ${num(bedXY)} mm bed`
           : ''
       }.`,
-      '- 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers, elephant-foot compensation 0.15 mm.',
+      `- ${BASE_WALLS} walls, 20 % gyroid infill, ${shells} top and ${shells} bottom layers (${num(nz.layer)} mm), elephant-foot compensation 0.15 mm.`,
       `- **Tree supports, on build plate only**: the ${num(dims.base.pocketDiameter)} mm plate pocket in the underside has a flat ceiling. The Ø ${num(dims.base.bossDiameter)} mm boss hanging from its middle ends in a 45° tip and needs only a small support under its flat; the cable tunnel has a 45° teardrop roof and needs none.`,
     ].join('\n'),
     '',
@@ -184,7 +190,7 @@ export function printPlanMarkdown(input: DocInput): string {
   out.push(
     [
       '- Print plate-down, as exported (rings and boss pointing up), no supports. The top edge is a 45° chamfer blending into a round, so nothing overhangs more than 45°.',
-      '- 3 walls, 20 % infill, 0.2 mm layers for a clean top surface, elephant-foot compensation 0.15 mm.',
+      `- ${COVER_WALLS} walls, 20 % infill, ${num(nz.fineLayer)} mm layers for a clean top surface, elephant-foot compensation 0.15 mm.`,
     ].join('\n'),
     '',
   );

@@ -6,13 +6,14 @@
  */
 import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { CORE_PRESETS, PRINTER_PRESETS, defaultParams, getParam, setParam as setParamValue } from '../geometry';
+import { CORE_PRESETS, NOZZLES, PRINTER_PRESETS, defaultParams, getParam, setParam as setParamValue } from '../geometry';
 import type {
   CoreKind,
   EnumParamPath,
   ExportStage,
   HeightMode,
   LampParams,
+  NozzleId,
   NumericParamPath,
   PartMesh,
   PetgColour,
@@ -64,12 +65,14 @@ export type ConfigSource = 'default' | 'link' | 'storage' | 'preset' | 'reset';
 export interface LampActions {
   /** Set a numeric param: rounded to its precision, clamped to PARAM_META. Honours ui.linkSegmentHeights; editing a bed size switches the printer preset to 'custom'. */
   setParam(path: NumericParamPath, value: number): void;
-  /** Set an enum param. 'core.kind' and 'printer.preset' delegate to applyCorePreset / applyPrinterPreset. */
+  /** Set an enum param. 'core.kind', 'printer.preset' and 'printer.nozzle' delegate to applyCorePreset / applyPrinterPreset / applyNozzle. */
   setEnum<P extends EnumParamPath>(path: P, value: EnumValue<P>): void;
   /** Core kind + the preset's diameter; the LED tube also zeroes the strip build-up and inner slits (the rod restores their defaults). */
   applyCorePreset(kind: CoreKind): void;
   /** Printer preset + its bed size ('custom' keeps the current bed). */
   applyPrinterPreset(id: PrinterId): void;
+  /** Nozzle size + its vase-mode line width as the segment wall (segments.wall). */
+  applyNozzle(id: NozzleId): void;
   setHeightMode(mode: HeightMode): void;
   /** Paint band `index` (0 = bottom) of `stack` with `colourId` (default: ui.brush). Clears that stack's generator. */
   paintBand(stack: Stack, index: number, colourId?: string): void;
@@ -204,6 +207,7 @@ export function createLampStore(init: LampStoreInit = {}) {
         setEnum(path, value) {
           if (path === 'core.kind') return actions.applyCorePreset(value as CoreKind);
           if (path === 'printer.preset') return actions.applyPrinterPreset(value as PrinterId);
+          if (path === 'printer.nozzle') return actions.applyNozzle(value as NozzleId);
           setParams(withEnumParam(get().config.params, path, value));
         },
         applyCorePreset(kind) {
@@ -229,7 +233,13 @@ export function createLampStore(init: LampStoreInit = {}) {
           const p = get().config.params;
           if (id === 'custom') return setParams({ ...p, printer: { ...p.printer, preset: 'custom' } });
           const [bedX, bedY, bedZ] = preset.bed;
-          setParams({ ...p, printer: { preset: id, bedX, bedY, bedZ } });
+          setParams({ ...p, printer: { ...p.printer, preset: id, bedX, bedY, bedZ } });
+        },
+        applyNozzle(id) {
+          const nz = NOZZLES[id];
+          if (!nz) return;
+          const p = get().config.params;
+          setParams({ ...p, printer: { ...p.printer, nozzle: id }, segments: { ...p.segments, wall: nz.wall } });
         },
         setHeightMode(mode) {
           setParams(withEnumParam(get().config.params, 'segments.heightMode', mode));

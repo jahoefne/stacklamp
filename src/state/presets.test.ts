@@ -26,7 +26,7 @@ describe('built-in presets', () => {
   }
   it('a1-mini-compact fits the 180 mm printer', () => {
     const p = decodeConfig(BUILTIN_PRESETS[1]!.code)!.config.params;
-    expect(p.printer).toEqual({ preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 });
+    expect(p.printer).toEqual({ preset: 'bambu-a1-mini', nozzle: '0.6', bedX: 180, bedY: 180, bedZ: 180 });
     const fit = deriveDims(p).fit;
     for (const id of ['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp'] as const) expect(fit[id].fitsBed && fit[id].fitsZ, id).toBe(true);
   });

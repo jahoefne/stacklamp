@@ -1,6 +1,6 @@
 import { useId, type ReactElement } from 'react';
-import { PRINTER_PRESETS } from '../../geometry';
-import type { PrinterId } from '../../geometry';
+import { NOZZLES, NOZZLE_IDS, PRINTER_PRESETS } from '../../geometry';
+import type { NozzleId, PrinterId } from '../../geometry';
 import { useDims, useLamp, useLampActions } from '../../state';
 import type { LampState } from '../../state';
 import { ParamNumberField } from '../primitives/ParamNumberField';
@@ -12,16 +12,22 @@ import panel from './panel.module.css';
 const PRINTER_IDS = Object.keys(PRINTER_PRESETS) as PrinterId[];
 const PRINTER_OPTIONS = PRINTER_IDS.map((id) => ({ value: id, label: PRINTER_PRESETS[id].label }));
 
-const selectPrinter = (s: LampState): PrinterId => s.config.params.printer.preset;
+const NOZZLE_OPTIONS = NOZZLE_IDS.map((id) => ({ value: id, label: NOZZLES[id].label }));
 
-/** 04 Base & printer: base and weight plate sizes, printer bed. Print notes live under Checks. */
+const selectPrinter = (s: LampState): PrinterId => s.config.params.printer.preset;
+const selectNozzle = (s: LampState): NozzleId => s.config.params.printer.nozzle;
+
+/** 04 Base & printer: base and weight plate sizes, printer bed and nozzle. Print notes live under Checks. */
 export function BaseSection(): ReactElement {
   const printer = useLamp(selectPrinter);
+  const nozzle = useLamp(selectNozzle);
   const d = useDims();
-  const { applyPrinterPreset } = useLampActions();
+  const { applyPrinterPreset, applyNozzle } = useLampActions();
   const printerId = useId();
+  const nozzleId = useId();
   const custom = printer === 'custom';
   const bed = PRINTER_PRESETS[printer].bed;
+  const nz = NOZZLES[nozzle] ?? NOZZLES['0.6'];
 
   return (
     <PanelSection id="section-base" number={4} title="Base & printer">
@@ -62,6 +68,15 @@ export function BaseSection(): ReactElement {
             <ParamNumberField path="printer.bedZ" hint="Build height. Segments must print in one piece." />
           </>
         ) : null}
+        <div className={panel.control}>
+          <label htmlFor={nozzleId} className={panel.controlLabel}>
+            Nozzle
+          </label>
+          <Select id={nozzleId} block value={nz.id} options={NOZZLE_OPTIONS} onChange={(e) => applyNozzle(e.target.value as NozzleId)} />
+          <p className={panel.hint}>
+            Sets the segment wall to {nz.wall} mm (one vase-mode line) and {nz.layer} mm layers in the print plan.
+          </p>
+        </div>
       </div>
     </PanelSection>
   );

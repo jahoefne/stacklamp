@@ -136,7 +136,7 @@ describe('export ZIP', () => {
   });
 
   it('refuses to export while there are errors', () => {
-    const p = withParams((q) => (q.printer = { preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 }));
+    const p = withParams((q) => (q.printer = { ...q.printer, preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 }));
     expect(() => h.exportZip(request(p))).toThrow(/Fix these problems/);
     const posted: { type: string }[] = [];
     h.handle({ type: 'export', id: 7, req: request(p) }, (r) => posted.push(r));

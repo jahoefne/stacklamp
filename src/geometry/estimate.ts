@@ -4,8 +4,8 @@
  * LED-tube and A1-mini lamps with the settings PRINT-PLAN.md recommends
  * (within ~4 %).
  *
- *  - Segments and fit test (spiral vase, one line of width w, 0.3 mm layers):
- *    the extruded line has rounded flanks, so it holds (w − h·(1 − π/4))·h
+ *  - Segments and fit test (spiral vase, one line of width w at layer height
+ *    h): the extruded line has rounded flanks, so it holds (w − h·(1 − π/4))·h
  *    instead of w·h per mm.
  *  - Base and cover (walls + 20 % infill): the infill core is the (r, z)
  *    profile eroded by the wall thickness sideways and by the top/bottom
@@ -14,34 +14,23 @@
  *    dilated by the wall thickness is taken out of the plate's core.
  *  - Base: tree supports under the plate pocket ceiling ≈ 8 % of the pocket volume.
  *  - Plate clamp: printed solid (100 % infill), so the estimate is the volume.
+ *
+ * The layer heights, line widths and shells come with the specs (layout.ts
+ * derives them from the nozzle via print.ts).
  */
 import { slitPolygons } from './build/cover';
 import type { CrossSection, Scope, Vec2 } from './kernel';
 import type { BaseSpec, CoverSpec, SegmentSpec } from './layout';
+import type { ShellSettings } from './print';
 import { revolvedVolume, type Profile } from './profile';
 import { baseProfile } from './profiles/base';
 import { coverProfile } from './profiles/cover';
 
-export interface ShellSettings {
-  /** Wall thickness (loops × line width), mm. */
-  wall: number;
-  /** Top / bottom shell thickness, mm. */
-  topBottom: number;
-  /** Sparse infill density, 0..1. */
-  infill: number;
-}
-
-/** 0.6 mm nozzle: 4 walls × 0.62, 5 top/bottom layers × 0.3 mm, 20 % gyroid. */
-export const BASE_PRINT: ShellSettings = { wall: 4 * 0.62, topBottom: 5 * 0.3, infill: 0.2 };
-/** 0.6 mm nozzle: 3 walls × 0.62, 0.2 mm layers (0.8 mm top, 0.6 mm bottom), 20 % infill. */
-export const COVER_PRINT: ShellSettings = { wall: 3 * 0.62, topBottom: 0.7, infill: 0.2 };
-/** Vase-mode layer height, mm. */
-export const VASE_LAYER = 0.3;
 /** Tree supports under the pocket ceiling, as a fraction of the pocket volume. */
 export const SUPPORT_FRACTION = 0.08;
 
-/** Share of the solid wall a vase-mode line of width `wall` actually fills. */
-export const vaseFill = (wall: number): number => Math.max(0.5, 1 - (VASE_LAYER * (1 - Math.PI / 4)) / wall);
+/** Share of the solid wall a vase-mode line of width `wall` at layer height `layer` actually fills. */
+export const vaseFill = (wall: number, layer: number): number => Math.max(0.5, 1 - (layer * (1 - Math.PI / 4)) / wall);
 
 /** Volume of the tree supports under the base's pocket ceiling, mm³. */
 export const supportVolume = (pocketRadius: number, pocketDepth: number): number =>
@@ -66,12 +55,13 @@ function slitWallArea(s: Scope, spec: CoverSpec, shell: ShellSettings, segments:
 }
 
 export function printedSegment(volume: number, spec: SegmentSpec): number {
-  return volume * vaseFill(spec.wall);
+  return volume * vaseFill(spec.wall, spec.layer);
 }
 
 export function printedBase(s: Scope, volume: number, spec: BaseSpec, arcSegments: number): number {
-  const core = coreVolume(s, baseProfile(spec, arcSegments), BASE_PRINT, arcSegments);
-  return volume - (1 - BASE_PRINT.infill) * core + supportVolume(spec.pocketRadius, spec.pocketDepth);
+  const shell = spec.shell;
+  const core = coreVolume(s, baseProfile(spec, arcSegments), shell, arcSegments);
+  return volume - (1 - shell.infill) * core + supportVolume(spec.pocketRadius, spec.pocketDepth);
 }
 
 /** The clamp is printed solid: a 3 mm disc whose screw head bears on it. */
@@ -80,7 +70,7 @@ export function printedClamp(volume: number): number {
 }
 
 export function printedCover(s: Scope, volume: number, spec: CoverSpec, arcSegments: number, cutterSegments: number): number {
-  const shell = COVER_PRINT;
+  const shell = spec.shell;
   let core = coreVolume(s, coverProfile(spec, arcSegments), shell, arcSegments);
   const plateCore = Math.max(0, spec.plate - 2 * shell.topBottom);
   core = Math.max(0, core - slitWallArea(s, spec, shell, cutterSegments) * plateCore);

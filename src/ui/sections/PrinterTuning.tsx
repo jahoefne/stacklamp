@@ -100,7 +100,7 @@ export function PrinterTuning(): ReactElement {
       >
         <div className={styles.body}>
           <div className={panel.row}>
-            <p className={panel.hint}>The defaults print well on a 0.6 mm nozzle in vase mode.</p>
+            <p className={panel.hint}>The defaults print well in vase mode (tuned on a 0.6 mm nozzle).</p>
             <Button size="sm" variant="secondary" onClick={reset} disabled={atDefaults}>
               Reset tuning
             </Button>
