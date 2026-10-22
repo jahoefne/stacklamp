@@ -444,7 +444,7 @@ function SchematicStack({ innerColours, outerColours, dims, title, className }: 
           {`${fmt(total)} mm`}
         </text>
       </g>
-      {hDim(-coverR, coverR, total + 1.4 * u, `Ø ${fmt(outerOD)}`, 'outer')}
+      {hDim(-coverR, coverR, total + 1.4 * u, `Ø ${fmt(outerOD)}`, 'outer-dim')}
       {hDim(-rB, rB, -1.4 * u, `Ø ${fmt(baseD)}`, 'base', true)}
       {topBand ? callout(-rO * 0.5, (topBand.z0 + topBand.z1) / 2, 'Outer', `${outer.length} × ${fmt(segHO)} mm`, 'outer') : null}
       {innerMark ? callout(rI * 0.6, (innerMark.z0 + innerMark.z1) / 2, `Inner Ø ${fmt(innerOD)}`, `${inner.length} × ${fmt(segHI)} mm`, 'inner') : null}
