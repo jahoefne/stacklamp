@@ -1,0 +1,44 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`golden values at the defaults > snapshot 1`] = `
+{
+  "A_o": 1465.75,
+  "base": {
+    "height": 43,
+    "printHeight": 78,
+    "screwAboveTop": 27.75,
+    "wire": "beside-collar",
+  },
+  "coverOD": 205.3,
+  "inner": {
+    "count": 11,
+    "deviation": 0.028667,
+    "height": 154.3,
+    "pitch": 133.05,
+  },
+  "messages": [
+    "info:base-height-raised",
+    "info:pocket-needs-supports",
+    "info:screw-height-raised",
+  ],
+  "outer": {
+    "count": 11,
+    "deviation": 0.03,
+    "height": 154.5,
+    "pitch": 133.25,
+  },
+  "plateUndersideZ": 1530.5,
+  "ringHeight": 21.75,
+  "rod": {
+    "bottomZ": 28,
+    "endGap": 2.5,
+    "topZ": 1528,
+  },
+  "seatZ": 21.25,
+  "socketODs": [
+    202.1,
+    62.1,
+  ],
+  "totalHeight": 1533.5,
+}
+`;

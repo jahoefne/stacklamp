@@ -1,0 +1,312 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`export ZIP > documents (snapshot) > ASSEMBLY.md 1`] = `
+"# stacklamp — assembly
+
+Configuration: https://jahoefne.github.io/stacklamp/#v=1
+
+## Hardware
+
+- **Core:** 1500 mm aluminium tube Ø 20 mm, no cut needed.
+- **3 × M4 screws** (8–10 mm set screws or self-tapping screws) for the collar holes (Ø 3.3 mm), or a few dots of hot glue instead.
+- **Weight plate** Ø 155 × 25 mm with a 30 mm bore (a standard cast-iron dumbbell plate); it sits in the base's 158 × 26 mm underside pocket and keeps the lamp from tipping.
+- **LED strip**, 10 mm wide, 12 V or 24 V, wrapped around the rod between 78 mm and 1515.5 mm above the floor (1437.5 mm). Length estimate:
+
+| Wrap | Strip length |
+|---|---|
+| tight helix (pitch 10 mm) | ≈ 10.5 m |
+| open helix (pitch 20 mm) | ≈ 5.4 m |
+| open helix (pitch 40 mm) | ≈ 3 m |
+| one straight run | ≈ 1.44 m |
+
+- **Power supply:** a certified 12 V or 24 V (SELV) supply matching the strip, rated for the strip power (W/m × length) plus 20 %, with an inline switch or dimmer. The supply stays outside the lamp.
+- **Printed parts:** base, 11 × inner segment, 11 × outer segment, top cover (see PRINT-PLAN.md).
+
+## Steps
+
+1. Press the weight plate into the pocket on the underside of the base. If it rattles, a few dots of hot glue or a strip of tape hold it.
+2. Push the rod into the collar until it stands on the socket floor, 15 mm below the base top. Tighten the 3 screws (27.75 mm above the base top) evenly so the rod stands upright.
+3. Wrap the LED strip around the rod from the collar top (78 mm) up to 1515.5 mm, leaving the top 15 mm free for the cover boss. Secure both ends.
+4. Route the strip's lead down the Ø 8 mm hole beside the collar into the tunnel and out of the base rim. Connect it to the power supply outside the lamp.
+5. Stack the 11 inner segments onto the inner ring of the base, foot (socket) down, in the colour order of PRINT-PLAN.md (band 1 at the bottom). Each foot slides over the rim below and sits on its 45° shoulder.
+6. Stack the 11 outer segments onto the outer ring the same way.
+7. Fit the cover: the boss goes over the rod end, the inner ring over the top inner segment, the outer ring over the top outer segment, whose rim bears on the cover plate. The rod ends 2.5 mm below the boss hole ceiling and the inner stack 2.2 mm below the plate.
+
+## Safety
+
+- Use **only SELV LED strips (12 V or 24 V)** with a certified, correctly rated power supply. Never bring mains voltage into the lamp.
+- **PETG softens at about 80 °C.** Keep the air intakes in the base and the slits in the cover open so warm air can rise through the stacks; use moderate strip power (aluminium rod as heat sink) and check after an hour that no part gets hot to the touch.
+- **Anchor the lamp against tipping.** It is 1.53 m tall on a 240 mm base: always use the weight plate, stand it on a level floor and keep it out of reach of small children and pets.
+- The printed parts are not a structural load path: do not lift the lamp by the cover or the segments.
+"
+`;
+
+exports[`export ZIP > documents (snapshot) > PRINT-PLAN.md 1`] = `
+"# stacklamp — print plan
+
+Generated 2026-10-22T12:00:00.000Z by stacklamp 0.1.0.
+Reopen this lamp: https://jahoefne.github.io/stacklamp/#v=1
+
+## Summary
+
+| Item | Value |
+|---|---|
+| Rod | 1500 mm aluminium tube Ø 20 mm, no cut needed |
+| Lamp height | 1533.5 mm (base 43 mm + stacks + 3 mm cover plate) |
+| Outer stack | 11 × 154.5 mm segments, Ø 200 mm, pitch 133.25 mm (+3.0 % from the 150 mm target) |
+| Inner stack | 11 × 154.3 mm segments, Ø 60 mm, pitch 133.05 mm (+2.9 % from the 150 mm target) |
+| Height mode | auto (segment heights fitted to the rod) |
+| Joint | 20 mm overlap, 0.25 mm clearance, seat height 21.25 mm |
+| Rod end | 2.5 mm below the cover's boss hole ceiling |
+| Inner stack top | 2.2 mm below the cover plate |
+
+## Printer fit — Bambu Lab P1S / X1C / A1 (256 mm), 256 × 256 × 256 mm
+
+| Part | Size (mm) | Fits bed | Fits height |
+|---|---|---|---|
+| Base | 240 × 240 × 78 | yes | yes |
+| Inner segment | 62.1 × 62.1 × 154.3 | yes | yes |
+| Outer segment | 202.1 × 202.1 × 154.5 | yes | yes |
+| Top cover | 205.3 × 205.3 × 23 | yes | yes |
+
+## Parts
+
+| File | Part | Copies | Colours | Triangles | Volume each (cm³) | Solid each (g) | Estimate each (g) | Estimate total (g) |
+|---|---|---:|---|---:|---:|---:|---:|---:|
+| base.3mf | Base | 1 | any (opaque recommended) | 53,950 | 1488.2 | 1890.0 | 669.2 | 669 |
+| inner-segment.3mf | Inner segment | 11 | Clear × 6, Amber × 5 | 4,000 | 23.1 | 29.3 | 29.3 | 322 |
+| outer-segment.3mf | Outer segment | 11 | Amber × 4, Teal × 4, Clear × 3 | 12,800 | 77.5 | 98.4 | 98.4 | 1082 |
+| top-cover.3mf | Top cover | 1 | any (opaque recommended) | 33,408 | 131.1 | 166.5 | 166.5 | 166 |
+
+Total ≈ 2240 g / 733 m of 1.75 mm PETG (density 1.27 g/cm³). Segments print as solid vase walls; the base and cover estimates assume 4 walls and 20 % infill.
+
+### Filament per colour
+
+| Colour | Inner segments | Outer segments | Mass (g) | Filament (m) |
+|---|---:|---:|---:|---:|
+| Clear (#e8eef0) | 6 | 3 | 471 | 154.1 |
+| Amber (#f0a020) | 5 | 4 | 540 | 176.7 |
+| Teal (#109090) | 0 | 4 | 393 | 128.8 |
+
+### Colour order (bottom → top)
+
+**Outer stack**  
+1. Amber  
+2. Teal  
+3. Clear  
+4. Amber  
+5. Teal  
+6. Clear  
+7. Amber  
+8. Teal  
+9. Clear  
+10. Amber  
+11. Teal
+
+**Inner stack**  
+1. Clear  
+2. Amber  
+3. Clear  
+4. Amber  
+5. Clear  
+6. Amber  
+7. Clear  
+8. Amber  
+9. Clear  
+10. Amber  
+11. Clear
+
+Slicers ignore the colours stored in the 3MF files (they are a viewer hint only): load the filament for each print yourself.
+
+## Slicer settings
+
+### Segments (and the fit test) — spiral vase
+
+- Nozzle 0.6 mm, line width = wall = 0.8 mm.
+- Spiral vase mode on: 1 wall, 0 top and 0 bottom layers, 0 % infill.
+- Layer height 0.3 mm.
+- PETG: nozzle 240–250 °C, bed 70–80 °C, part cooling fan 30–50 %.
+- Brim 5 mm on the outer segments (tall and thin); none needed on the inner ones.
+- Elephant-foot compensation 0.15 mm: the foot is a socket and must not flare.
+- One object per plate; print the foot (socket) down, as exported.
+- **Print the fit test first** (2 rings): push one ring's foot over the other's rim. It should slide on with light pressure and sit on the 45° shoulder without wobble. Too tight → raise the joint clearance by 0.05 mm (now 0.25 mm); loose → lower it.
+
+### Base — normal mode
+
+- Print top-up, as exported.
+- 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers.
+- **Tree supports, on build plate only**: the 158 mm plate pocket in the underside has a flat ceiling. The cable tunnel has a 45° teardrop roof and needs no support.
+- PETG 240–250 °C, bed 70–80 °C.
+
+### Top cover — normal mode
+
+- Print plate-down, as exported (rings and boss pointing up), no supports. The top edge is a 45° chamfer blending into a round, so nothing overhangs more than 45°.
+- 3–4 walls, 20 % infill, 0.2 mm layers for a clean top surface.
+
+## Notes
+
+- The 158 mm plate pocket ceiling needs tree supports (build plate only).
+"
+`;
+
+exports[`export ZIP > documents (snapshot) > config.json 1`] = `
+"{
+  "app": "stacklamp",
+  "schema": 1,
+  "generated": "2026-10-22T12:00:00.000Z",
+  "appVersion": "0.1.0",
+  "shareUrl": "https://jahoefne.github.io/stacklamp/#v=1",
+  "params": {
+    "version": 1,
+    "core": {
+      "kind": "aluminium-rod",
+      "diameter": 20,
+      "length": 1500,
+      "stripBuildUp": 3
+    },
+    "tubes": {
+      "innerOD": 60,
+      "outerOD": 200
+    },
+    "segments": {
+      "wall": 0.8,
+      "overlap": 20,
+      "rimLeadIn": 1,
+      "heightMode": "auto",
+      "innerHeight": 150,
+      "outerHeight": 150,
+      "maxDeviation": 0.1
+    },
+    "base": {
+      "diameter": 240,
+      "minHeight": 40,
+      "topRound": 3,
+      "ringWall": 3,
+      "footGap": 0.5,
+      "collarWall": 6,
+      "collarHeight": 35,
+      "socketBelowTop": 15,
+      "screwCount": 3,
+      "screwDiameter": 3.3,
+      "wireDiameter": 8,
+      "wireRouting": "auto",
+      "intakeCount": 6,
+      "intakeWidth": 10,
+      "intakeHeight": 4
+    },
+    "plate": {
+      "od": 155,
+      "thickness": 25,
+      "bore": 30
+    },
+    "cover": {
+      "plateThickness": 3,
+      "ringWall": 2.4,
+      "innerRingHeight": 12,
+      "bossWall": 4,
+      "bossHeight": 15,
+      "bossHoleDepth": 15,
+      "rodEndGap": 2.5,
+      "outerSlits": 16,
+      "innerSlits": 8,
+      "slitWidth": 3
+    },
+    "printer": {
+      "preset": "bambu-256",
+      "bedX": 256,
+      "bedY": 256,
+      "bedZ": 256
+    },
+    "tolerances": {
+      "segment": 0.25,
+      "core": 0.3,
+      "plateRadial": 1.5,
+      "plateDepth": 1
+    }
+  },
+  "colourPlan": {
+    "palette": [
+      {
+        "id": "clr",
+        "name": "Clear",
+        "hex": "#e8eef0"
+      },
+      {
+        "id": "amb",
+        "name": "Amber",
+        "hex": "#f0a020"
+      },
+      {
+        "id": "tea",
+        "name": "Teal",
+        "hex": "#109090"
+      }
+    ],
+    "inner": [
+      "clr",
+      "amb",
+      "clr",
+      "amb",
+      "clr",
+      "amb",
+      "clr",
+      "amb",
+      "clr",
+      "amb",
+      "clr"
+    ],
+    "outer": [
+      "amb",
+      "tea",
+      "clr",
+      "amb",
+      "tea",
+      "clr",
+      "amb",
+      "tea",
+      "clr",
+      "amb",
+      "tea"
+    ]
+  },
+  "derived": {
+    "seatZ": 21.25,
+    "ringHeight": 21.75,
+    "outer": {
+      "count": 11,
+      "height": 154.5,
+      "targetHeight": 150,
+      "deviation": 0.03,
+      "pitch": 133.25,
+      "D": 200
+    },
+    "inner": {
+      "count": 11,
+      "height": 154.3,
+      "targetHeight": 150,
+      "deviation": 0.028667,
+      "pitch": 133.05,
+      "D": 60
+    },
+    "base": {
+      "height": 43,
+      "printHeight": 78,
+      "wireRouting": "beside-collar"
+    },
+    "cover": {
+      "od": 205.3,
+      "plateUndersideZ": 1530.5,
+      "innerTopGap": 2.2
+    },
+    "rod": {
+      "requiredLength": 1500,
+      "cutOff": 0,
+      "endGap": 2.5,
+      "bottomZ": 28,
+      "topZ": 1528
+    },
+    "totalHeight": 1533.5
+  }
+}
+"
+`;

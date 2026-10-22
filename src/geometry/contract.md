@@ -18,3 +18,4 @@
 
 ## Changelog
 - 2026-10-22 v1 frozen by the orchestrator.
+- 2026-10-22 engine landed (barrel now real). Additions, no breaking changes: extra message codes (`tubes-too-close`, `base-too-small`, `wire-no-room`, `screw-vs-collar`, `invalid-number`, `out-of-range`, `outer-slits-dropped`); always-on info at defaults (`base-height-raised`, `screw-height-raised`, `pocket-needs-supports` without a path); `fit-test` has `copies = 2` (two rings to push together); `computeBom` metres come from the realistic mass estimate; `config.json` also carries `appVersion` and `colourPlan`; barrel also exports `FILAMENT_DIAMETER_MM`, `MESSAGE_CODES`, `MessageCode`, `isBenignGeometryError`, `parseConfig`, `ConfigFile`. Locked mode uses `N = floor((A + 0.5) / P)` so the auto→locked round trip holds; `buildParts` never returns the fit test and still builds under bed-fit errors.
