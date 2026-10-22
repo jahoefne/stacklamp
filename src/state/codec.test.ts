@@ -121,7 +121,7 @@ describe('decodeConfig', () => {
 
   it('decodes a custom palette with odd names, keeping default ids for unchanged defaults', () => {
     const palette: PetgColour[] = [
-      { id: 'clr', name: 'Clear', hex: '#fff4e0' },
+      { id: 'clr', name: 'Clear', hex: '#fff4dc' },
       { id: 'c1', name: 'Ünïcode~,&=#+ Glow!', hex: '#123abc' },
       { id: 'c2', name: '   ', hex: '#000000' },
       { id: 'c3', name: 'A very very long colour name indeed', hex: '#ABCDEF' },
@@ -141,7 +141,7 @@ describe('decodeConfig', () => {
       'Red',
       'two spaces - dash',
     ]);
-    expect(r.config.palette.map((p) => p.hex)).toEqual(['#fff4e0', '#123abc', '#000000', '#abcdef', '#ff0000', '#010203']);
+    expect(r.config.palette.map((p) => p.hex)).toEqual(['#fff4dc', '#123abc', '#000000', '#abcdef', '#ff0000', '#010203']);
     // Clear matches the default by name + hex → keeps 'clr'; Red has a different hex → custom id
     expect(r.config.palette[0]!.id).toBe('clr');
     expect(r.config.palette[4]!.id).not.toBe('red');
@@ -156,7 +156,7 @@ describe('decodeConfig', () => {
     expect(r.config.palette).toHaveLength(MAX_COLOURS);
     expect(r.issues).toHaveLength(1);
     const bad = decodeOk('v=1&pal=Ok~zzzzzz,NoHex');
-    expect(bad.config.palette.map((p) => p.hex)).toEqual(['#9a9a9a', '#9a9a9a']);
+    expect(bad.config.palette.map((p) => p.hex)).toEqual(['#6b625a', '#6b625a']);
     expect(bad.issues).toHaveLength(2);
     const empty = decodeOk('v=1&pal=');
     expect(empty.config.palette).toEqual(defaultPalette());

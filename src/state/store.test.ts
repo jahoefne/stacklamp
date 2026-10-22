@@ -172,7 +172,7 @@ describe('palette', () => {
     const store = make();
     const { updateColour } = store.getState().actions;
     updateColour('red', { name: '  Deep~Red  ', hex: 'nope' });
-    expect(store.getState().config.palette.find((c) => c.id === 'red')).toEqual({ id: 'red', name: 'DeepRed', hex: '#ff3b2e' });
+    expect(store.getState().config.palette.find((c) => c.id === 'red')).toEqual({ id: 'red', name: 'DeepRed', hex: '#f2363f' });
     updateColour('red', { hex: '#AA0000' });
     expect(store.getState().config.palette.find((c) => c.id === 'red')?.hex).toBe('#aa0000');
   });
