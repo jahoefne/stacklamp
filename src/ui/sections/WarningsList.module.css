@@ -1,0 +1,167 @@
+.asideText {
+  font-variant-numeric: tabular-nums;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border-bold) solid var(--color-ink);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+
+.row + .row {
+  border-top: var(--border-thin) solid var(--color-line);
+}
+
+.sev {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+
+.error {
+  box-shadow: inset 4px 0 0 var(--color-danger);
+}
+
+.error .sev {
+  background: var(--color-danger);
+  color: var(--color-paper);
+}
+
+.warning .sev {
+  background: var(--block-1);
+  color: var(--color-ink);
+}
+
+.info .sev {
+  border: var(--border-thin) solid var(--color-ink);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+}
+
+.ok .sev {
+  background: var(--color-ok);
+  color: var(--color-paper);
+}
+
+.text {
+  padding-top: 4px;
+}
+
+.error .text {
+  font-weight: var(--fw-medium);
+}
+
+.fix {
+  min-height: 28px;
+  padding: var(--space-1) 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  text-align: right;
+  text-decoration: underline;
+  text-decoration-thickness: var(--border-bold);
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .fix:hover {
+    color: var(--color-accent);
+  }
+}
+
+.fix:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+@media (pointer: coarse) {
+  .fix {
+    min-height: var(--target-min);
+  }
+}
+
+@media (max-width: 599.98px) {
+  .row {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .fix {
+    grid-column: 2;
+    justify-self: start;
+    text-align: left;
+  }
+}
+
+/* ── Sticky error strip ───────────────────────────────────────────────── */
+
+.sticky {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border: var(--border-bold) solid var(--color-danger);
+  background: var(--color-paper);
+  box-shadow: inset 4px 0 0 var(--color-danger);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+
+.stickyIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: var(--color-danger);
+  color: var(--color-paper);
+}
+
+.stickyText {
+  flex: 1;
+  min-width: 0;
+}
+
+.stickyButton {
+  flex: none;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: var(--border-bold) solid var(--color-ink);
+  background: var(--color-paper);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+
+@media (hover: hover) {
+  .stickyButton:hover {
+    background: var(--block-1);
+  }
+}
+
+.stickyButton:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+@media (pointer: coarse) {
+  .stickyButton {
+    min-height: var(--target-min);
+  }
+}

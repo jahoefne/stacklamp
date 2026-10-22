@@ -1,0 +1,22 @@
+/** Page sections. Each reads the store directly through src/state hooks. */
+export { Hero } from './Hero';
+export type { HeroProps } from './Hero';
+export { ConfiguratorLayout } from './ConfiguratorLayout';
+export type { ConfiguratorLayoutProps } from './ConfiguratorLayout';
+export { PanelSection } from './PanelSection';
+export type { PanelSectionProps } from './PanelSection';
+export { ShareBar } from './ShareBar';
+export { CoreSection, HeightModeToggle, HeightSummary } from './CoreSection';
+export { TubesSection } from './TubesSection';
+export { ColourSection } from './ColourSection';
+export { PaletteEditor } from './PaletteEditor';
+export { GeneratorBar } from './GeneratorBar';
+export { ColourBandEditor } from './ColourBandEditor';
+export { BaseSection } from './BaseSection';
+export { PrinterTuning, TUNING_PATHS } from './PrinterTuning';
+export { WarningsList, ErrorSummary } from './WarningsList';
+export { DownloadPanel } from './DownloadPanel';
+export { PreviewPane } from './PreviewPane';
+export { MiniBar } from './MiniBar';
+export { Footer, REPO_URL } from './Footer';
+export { selectPreviewBands, previewLabel } from './derived';

@@ -1,0 +1,167 @@
+/* Page shell: skip link, band rule, header, configurator heading, crash screen. */
+
+.skip {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: var(--z-toast);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-bold) solid var(--color-ink);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.skip:focus,
+.skip:focus-visible {
+  transform: none;
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.bandRule {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  height: 8px;
+}
+
+.bandRule > i:nth-child(1) {
+  background: var(--block-1);
+}
+
+.bandRule > i:nth-child(2) {
+  background: var(--block-2);
+}
+
+.bandRule > i:nth-child(3) {
+  background: var(--block-3);
+}
+
+.bandRule > i:nth-child(4) {
+  background: var(--block-4);
+}
+
+.bandRule > i:nth-child(5) {
+  background: var(--block-5);
+}
+
+.bandRule > i:nth-child(6) {
+  background: var(--block-6);
+}
+
+.header {
+  border-bottom: var(--border-bold) solid var(--color-ink);
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: var(--header-h);
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  color: inherit;
+  text-decoration-color: transparent;
+}
+
+@media (hover: hover) {
+  .nav a:hover {
+    color: inherit;
+    text-decoration-color: currentColor;
+  }
+}
+
+.main {
+  display: block;
+}
+
+.configurator {
+  padding-top: var(--space-6);
+  scroll-margin-top: 0;
+}
+
+.configurator:focus {
+  outline: none;
+}
+
+.configHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.configTitle {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-black);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-display);
+}
+
+.panelStack {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Crash screen ───────────────────────────────────────────────────── */
+
+.crash {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: var(--space-6) 0;
+  padding: var(--space-5);
+  border: var(--border-bold) solid var(--color-danger);
+  box-shadow: inset 4px 0 0 var(--color-danger);
+  background: var(--color-paper);
+}
+
+.crashTitle {
+  font-size: var(--fs-xl);
+}
+
+.crashDetail {
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: var(--fs-xs);
+  color: var(--color-ink-2);
+}
+
+.crashButton {
+  min-height: var(--target-min);
+  padding: 0 var(--space-5);
+  border: var(--border-bold) solid var(--color-ink);
+  background: var(--color-paper);
+  box-shadow: var(--shadow-block);
+  font-weight: var(--fw-bold);
+}

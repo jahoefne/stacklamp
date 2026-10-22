@@ -1,0 +1,74 @@
+.swatch {
+  --_c: var(--petg-clr);
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: var(--border-bold) solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--stage-sheen) 38%, transparent) 0 38%, transparent 38%),
+    var(--_c);
+  vertical-align: middle;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.sm {
+  width: 14px;
+  height: 14px;
+  border-width: var(--border-thin);
+  background: var(--_c);
+}
+
+.interactive {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 48 px hit area around the 32 px circle. */
+.interactive::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+}
+
+@media (hover: hover) {
+  .interactive:hover:not(:disabled) {
+    transform: scale(1.1);
+  }
+}
+
+.selected {
+  box-shadow:
+    0 0 0 3px var(--color-paper),
+    0 0 0 5px var(--color-ink);
+}
+
+.inMix::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 10px;
+  height: 10px;
+  border: var(--border-bold) solid var(--color-paper);
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  box-sizing: content-box;
+}
+
+.interactive:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 6px;
+}
+
+.interactive:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}

@@ -1,0 +1,128 @@
+.button {
+  --_bg: var(--color-paper);
+  --_fg: var(--color-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  padding: 0 var(--space-5);
+  border: var(--border-bold) solid var(--color-ink);
+  border-radius: var(--radius-0);
+  background: var(--_bg);
+  color: var(--_fg);
+  box-shadow: var(--shadow-block);
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.label {
+  min-width: 0;
+}
+
+.icon {
+  flex: none;
+}
+
+.primary {
+  --_bg: var(--color-accent);
+  --_fg: var(--color-accent-ink);
+}
+
+.secondary {
+  --_bg: var(--color-paper);
+}
+
+.ghost {
+  --_bg: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding: 0 var(--space-3);
+}
+
+@media (hover: hover) {
+  .primary:hover:not(:disabled),
+  .secondary:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--shadow-pop);
+  }
+
+  .secondary:hover:not(:disabled) {
+    --_bg: var(--block-1);
+  }
+
+  .ghost:hover:not(:disabled) {
+    --_bg: var(--color-paper-2);
+    text-decoration: underline;
+    text-decoration-thickness: var(--border-bold);
+    text-underline-offset: 4px;
+  }
+}
+
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: var(--shadow-press);
+}
+
+.ghost:active:not(:disabled) {
+  --_bg: var(--color-paper-2);
+  border-color: var(--color-ink);
+}
+
+.button:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.button:disabled {
+  --_bg: var(--color-paper-2);
+  --_fg: var(--color-ink-3);
+  border-color: var(--color-ink-3);
+  border-style: dashed;
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+.ghost:disabled {
+  --_bg: transparent;
+  border-color: transparent;
+}
+
+.sm {
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  font-size: var(--fs-sm);
+}
+
+.ghost.sm {
+  padding: 0 var(--space-2);
+}
+
+.wide {
+  width: 100%;
+  min-height: 3.5rem;
+  font-size: var(--fs-lg);
+}
+
+.busy {
+  cursor: progress;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (pointer: coarse) {
+  .sm {
+    min-height: var(--target-min);
+  }
+}

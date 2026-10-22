@@ -1,0 +1,31 @@
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-bold) solid var(--color-ink);
+  background: var(--color-paper-2);
+}
+
+.summaryLine {
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-body);
+}
+
+.total {
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+}
+
+.cut {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lh-snug);
+  color: var(--color-accent);
+}

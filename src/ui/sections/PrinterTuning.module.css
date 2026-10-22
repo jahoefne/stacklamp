@@ -1,0 +1,28 @@
+.section {
+  padding-bottom: var(--space-2);
+}
+
+.summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+
+.badge {
+  padding: 0 var(--space-2);
+  border: var(--border-thin) solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  line-height: 1.6;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}

@@ -1,0 +1,116 @@
+.viewport {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  z-index: var(--z-toast);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Above the mobile mini-bar. */
+@media (max-width: 959.98px) {
+  .viewport {
+    bottom: calc(var(--minibar-h) + var(--space-4) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.region {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: min(100%, 420px);
+  min-height: 52px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border: var(--border-bold) solid var(--color-inverse);
+  background: var(--color-inverse);
+  color: var(--color-inverse-ink);
+  box-shadow: 4px 4px 0 0 var(--block-1);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+  pointer-events: auto;
+  animation: toast-in var(--dur-base) var(--ease-out);
+}
+
+.error {
+  box-shadow: 4px 4px 0 0 var(--block-3);
+}
+
+.icon {
+  flex: none;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) 0;
+}
+
+.action {
+  flex: none;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: var(--border-bold) solid var(--color-inverse-ink);
+  background: transparent;
+  color: inherit;
+  font-weight: var(--fw-bold);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+@media (hover: hover) {
+  .action:hover {
+    background: var(--color-inverse-ink);
+    color: var(--color-inverse);
+  }
+
+  .close:hover {
+    color: var(--block-1);
+  }
+}
+
+.action:focus-visible,
+.close:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+@media (pointer: coarse) {
+  .action,
+  .close {
+    min-width: var(--target-min);
+    min-height: var(--target-min);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

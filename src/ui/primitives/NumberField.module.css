@@ -1,0 +1,183 @@
+.numberField {
+  min-width: 0;
+}
+
+.box {
+  display: inline-flex;
+  align-items: stretch;
+  height: var(--target-min);
+  border: var(--border-bold) solid var(--color-ink);
+  border-radius: var(--radius-0);
+  background: var(--color-paper);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .box:hover {
+    background: var(--color-paper-2);
+  }
+}
+
+.box:focus-within {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  background: var(--color-paper);
+}
+
+.input {
+  width: 7ch;
+  min-width: 0;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-0);
+  background: transparent;
+  color: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.input:focus-visible {
+  outline: none;
+}
+
+.unit {
+  display: grid;
+  place-items: center;
+  min-width: 3ch;
+  padding: 0 var(--space-3);
+  border-left: var(--border-bold) solid var(--color-ink);
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+  font-size: var(--fs-sm);
+}
+
+.invalid {
+  border-color: var(--color-danger);
+  box-shadow: inset 4px 0 0 var(--color-danger);
+}
+
+.invalid .unit {
+  border-left-color: var(--color-danger);
+}
+
+.disabled {
+  border-style: dashed;
+  border-color: var(--color-ink-3);
+  background: transparent;
+  color: var(--color-ink-3);
+}
+
+.disabled .unit {
+  border-left-color: var(--color-ink-3);
+  background: transparent;
+  color: var(--color-ink-3);
+}
+
+/* The headline field (rod length). */
+.lg .box {
+  height: 3.5rem;
+}
+
+.lg .input {
+  width: 6ch;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+}
+
+/* ── Slider ─────────────────────────────────────────────────────────── */
+
+.slider {
+  --_p: 50%;
+  width: 100%;
+  height: 24px;
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: linear-gradient(to right, var(--color-ink) var(--_p), var(--color-line) var(--_p));
+}
+
+.slider::-moz-range-track {
+  height: 4px;
+  background: var(--color-line);
+}
+
+.slider::-moz-range-progress {
+  height: 4px;
+  background: var(--color-ink);
+}
+
+.slider::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  border: var(--border-bold) solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  background: var(--color-paper);
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: var(--border-bold) solid var(--color-ink);
+  border-radius: var(--radius-pill);
+  background: var(--color-paper);
+}
+
+@media (hover: hover) {
+  .slider:hover::-webkit-slider-thumb {
+    background: var(--block-1);
+  }
+
+  .slider:hover::-moz-range-thumb {
+    background: var(--block-1);
+  }
+}
+
+.slider:focus-visible {
+  outline: none;
+}
+
+.slider:focus-visible::-webkit-slider-thumb {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.slider:focus-visible::-moz-range-thumb {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.slider:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (pointer: coarse) {
+  .slider {
+    height: var(--target-min);
+  }
+
+  .slider::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+    margin-top: -12px;
+  }
+
+  .slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+  }
+}
