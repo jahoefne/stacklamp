@@ -37,7 +37,7 @@ describe('PreviewCanvas without WebGL', () => {
     const { default: PreviewCanvas } = await import('./PreviewCanvas');
     const { container } = render(<PreviewCanvas {...props()} />);
     expect(screen.getByTestId('preview-fallback')).toBeTruthy();
-    expect(screen.getByText(/cannot show the 3D preview/i)).toBeTruthy();
+    expect(screen.getByText('No 3D preview in this browser. Here is a to-scale drawing instead.')).toBeTruthy();
     expect(container.querySelector('canvas')).toBeNull();
     // The schematic carries the accessible name and the band colours.
     const svg = container.querySelector('svg');
@@ -51,6 +51,14 @@ describe('PreviewCanvas without WebGL', () => {
     const { container } = render(<PreviewCanvas {...props({ layoutDims: null })} />);
     expect(screen.getByTestId('preview-fallback')).toBeTruthy();
     expect(container.querySelector('canvas')).toBeNull();
+  });
+
+  it('tells the parent that the schematic stands in', async () => {
+    const { PreviewCanvas } = await import('./index');
+    const onFallback = vi.fn();
+    render(<PreviewCanvas {...props({ onFallback })} />);
+    expect(onFallback).toHaveBeenCalledWith('no-webgl');
+    expect(onFallback).toHaveBeenCalledOnce();
   });
 });
 
@@ -71,7 +79,30 @@ describe('PreviewToolbar', () => {
     expect(onViewMode).toHaveBeenLastCalledWith('inner');
     fireEvent.click(screen.getByRole('button', { name: 'Reset view' }));
     expect(onResetView).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole('button', { name: /glow: auto/i }));
-    expect(onGlow).toHaveBeenCalledWith('on');
+    // Glow is a pressed toggle: auto (or on) → off → auto.
+    const glowButton = screen.getByRole('button', { name: 'Glow' });
+    expect(glowButton.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(glowButton);
+    expect(onGlow).toHaveBeenCalledWith('off');
+  });
+
+  it('turns the glow back to auto from off', async () => {
+    const { PreviewToolbar } = await import('./index');
+    const onGlow = vi.fn();
+    render(<PreviewToolbar viewMode="inner" onViewMode={() => {}} status="idle" onResetView={() => {}} glow="off" onGlow={onGlow} />);
+    const glowButton = screen.getByRole('button', { name: 'Glow' });
+    expect(glowButton.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(glowButton);
+    expect(onGlow).toHaveBeenCalledWith('auto');
+  });
+
+  it('disables glow and reset view (not the view switch) while the schematic is shown', async () => {
+    const { PreviewToolbar } = await import('./index');
+    render(
+      <PreviewToolbar viewMode="assembled" onViewMode={() => {}} status="idle" onResetView={() => {}} glow="auto" onGlow={() => {}} fallback />,
+    );
+    expect((screen.getByRole('button', { name: 'Glow' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Reset view' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('radio', { name: 'Exploded' }) as HTMLButtonElement).disabled).toBe(false);
   });
 });

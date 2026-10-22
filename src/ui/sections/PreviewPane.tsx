@@ -5,7 +5,6 @@ import type { GlowMode, PreviewStatus, QualityTier, ViewMode } from '../../previ
 import { selectPalette, selectPreviewDims, selectPreviewStale, useLamp, useLampActions } from '../../state';
 import type { LampState } from '../../state';
 import { StatusPill, type PillState } from '../primitives/StatusPill';
-import { cx } from '../primitives/format';
 import { previewLabel, selectPreviewBands } from './derived';
 import styles from './PreviewPane.module.css';
 
@@ -33,7 +32,10 @@ const ENGINE_TEXT: Record<LampState['engine']['status'], string> = {
 const isCoarse = (): boolean =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
 
-/** The dark stage with its toolbar and status: store → PreviewCanvas wiring. */
+/**
+ * The dark stage with its overlays: store → PreviewCanvas wiring. Toolbar top, status pill
+ * bottom-left, orbit hint bottom-right (DESIGN §10 "PreviewToolbar").
+ */
 export function PreviewPane(): ReactElement {
   const parts = useLamp(selectParts);
   const status = useLamp(selectStatus);
@@ -49,7 +51,9 @@ export function PreviewPane(): ReactElement {
   const [autoTier, setAutoTier] = useState<QualityTier | null>(null);
   const [resetSignal, setResetSignal] = useState(0);
   const [coarse] = useState(isCoarse);
-  const [webgl] = useState(isWebGLAvailable);
+  // The schematic stands in without WebGL, and later if the 3D chunk or the scene fails.
+  const [fallback, setFallback] = useState(() => !isWebGLAvailable());
+  const onFallback = useCallback(() => setFallback(true), []);
 
   const onViewMode = useCallback((m: ViewMode) => setUi({ viewMode: m }), [setUi]);
   const onGlow = useCallback((g: GlowMode) => setUi({ glow: g }), [setUi]);
@@ -60,21 +64,7 @@ export function PreviewPane(): ReactElement {
 
   return (
     <div className={styles.pane}>
-      <div className={styles.toolbar}>
-        <PreviewToolbar
-          viewMode={viewMode}
-          onViewMode={onViewMode}
-          status={status}
-          onResetView={onResetView}
-          glow={glow}
-          onGlow={onGlow}
-          autoTier={autoTier}
-        />
-        <span className="visually-hidden" role="status">
-          {ENGINE_TEXT[engine]}
-        </span>
-      </div>
-      <div className={styles.stage}>
+      <div className={styles.stage} data-fallback={fallback || undefined}>
         <PreviewCanvas
           parts={parts}
           layoutDims={layoutDims}
@@ -84,22 +74,36 @@ export function PreviewPane(): ReactElement {
           status={status}
           glow={glow}
           onGlowAuto={setAutoTier}
+          onFallback={onFallback}
           ariaLabel={label}
           resetViewSignal={resetSignal}
           coreKind={coreKind}
           className={styles.canvas ?? ''}
         />
-        <div className={cx(styles.overlay, !webgl && styles.overlayTop)}>
+        <PreviewToolbar
+          viewMode={viewMode}
+          onViewMode={onViewMode}
+          status={status}
+          onResetView={onResetView}
+          glow={glow}
+          onGlow={onGlow}
+          autoTier={autoTier}
+          fallback={fallback}
+        />
+        <div className={styles.overlay}>
           <StatusPill state={pillState} tone="stage" live={false}>
             {pillText}
           </StatusPill>
-          {webgl && !coarse ? (
+          {!fallback && !coarse ? (
             <p className={styles.hint} aria-hidden="true">
               Drag to orbit · scroll to zoom
             </p>
           ) : null}
         </div>
       </div>
+      <span className="visually-hidden" role="status">
+        {ENGINE_TEXT[engine]}
+      </span>
     </div>
   );
 }

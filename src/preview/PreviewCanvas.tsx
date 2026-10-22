@@ -9,14 +9,11 @@ import styles from './preview.module.css';
 import type { PreviewCanvasProps } from './types';
 import { isWebGLAvailable } from './webgl';
 
-/** The "Updating…" badge appears only once a build has been running this long. */
-export const BUSY_DELAY_MS = 150;
-
 const isCoarsePointer = (): boolean =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
 
 export default function PreviewCanvas(props: PreviewCanvasProps): ReactElement {
-  const { parts, layoutDims, bands, palette, viewMode, status, glow, ariaLabel, resetViewSignal, coreKind, className } = props;
+  const { parts, layoutDims, bands, palette, viewMode, glow, ariaLabel, resetViewSignal, coreKind, onFallback, className } = props;
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<LampScene | null>(null);
   const latest = useRef(props);
@@ -26,7 +23,7 @@ export default function PreviewCanvas(props: PreviewCanvasProps): ReactElement {
   const [coarse] = useState(isCoarsePointer);
   const [touchActive, setTouchActive] = useState(false);
   const touchActiveRef = useRef(touchActive);
-  const [busy, setBusy] = useState(false);
+  const touchButtonRef = useRef<HTMLButtonElement>(null);
 
   useLayoutEffect(() => {
     latest.current = props;
@@ -96,14 +93,15 @@ export default function PreviewCanvas(props: PreviewCanvasProps): ReactElement {
     sceneRef.current?.resetView();
   }, [resetViewSignal]);
 
+  // "Tap to rotate" and "Done" replace each other: keep keyboard focus on the one shown.
+  const touchSeen = useRef(false);
   useEffect(() => {
-    if (status !== 'building') {
-      setBusy(false);
+    if (!touchSeen.current) {
+      touchSeen.current = true;
       return;
     }
-    const t = setTimeout(() => setBusy(true), BUSY_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [status]);
+    touchButtonRef.current?.focus();
+  }, [touchActive]);
 
   if (!webgl || failed) {
     return (
@@ -114,6 +112,7 @@ export default function PreviewCanvas(props: PreviewCanvasProps): ReactElement {
         viewMode={viewMode}
         ariaLabel={ariaLabel}
         reason={webgl ? 'error' : 'no-webgl'}
+        {...(onFallback ? { onShown: onFallback } : {})}
         {...(className ? { className } : {})}
       />
     );
@@ -122,32 +121,19 @@ export default function PreviewCanvas(props: PreviewCanvasProps): ReactElement {
   return (
     <div className={[styles.stage, className].filter(Boolean).join(' ')} data-testid="preview-stage">
       <div ref={hostRef} className={styles.canvasHost} />
-      <div className={styles.overlayTop}>
-        {/* Visual only: announcing every rebuild would be noise for screen readers. */}
-        {busy && (
-          <span className={styles.badge} aria-hidden="true">
-            <span className={styles.badgeDot} />
-            Updating…
-          </span>
-        )}
-        {!busy && status === 'error' && (
-          <span className={styles.badge} data-tone="error" role="status">
-            <span className={styles.badgeDot} aria-hidden="true" />
-            Preview out of date
-          </span>
-        )}
-      </div>
-      {coarse && (
+      {/* Touch: the page scrolls over the preview until "Tap to rotate" hands the canvas the gestures. */}
+      {coarse && !touchActive && (
+        <div className={styles.scrim}>
+          <button ref={touchButtonRef} type="button" className={styles.touchButton} onClick={() => setTouchActive(true)}>
+            Tap to rotate
+          </button>
+        </div>
+      )}
+      {coarse && touchActive && (
         <div className={styles.overlayBottom}>
-          {touchActive ? (
-            <button type="button" className={styles.touchButton} data-active="" onClick={() => setTouchActive(false)}>
-              Done
-            </button>
-          ) : (
-            <button type="button" className={styles.touchButton} onClick={() => setTouchActive(true)}>
-              Tap to rotate
-            </button>
-          )}
+          <button ref={touchButtonRef} type="button" className={styles.touchButton} data-active="" onClick={() => setTouchActive(false)}>
+            Done
+          </button>
         </div>
       )}
     </div>

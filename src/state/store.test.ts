@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRINTER_PRESETS, deriveDims } from '../geometry';
+import { PRINTER_PRESETS, defaultParams, deriveDims } from '../geometry';
 import { fitBands } from './bands';
 import { decodeConfig } from './codec';
 import { defaultConfig, defaultUiPrefs } from './config';
@@ -68,6 +68,23 @@ describe('enums and presets', () => {
     expect(store.getState().config.params.core).toMatchObject({ kind: 'aluminium-rod', diameter: 20 });
     store.getState().actions.setEnum('printer.preset', 'ender-3');
     expect(store.getState().config.params.printer.bedZ).toBe(250);
+  });
+  it('the LED tube drops the strip build-up and the inner slits (no dropped-slits warning); the rod brings the defaults back', () => {
+    const store = make();
+    store.getState().actions.applyCorePreset('led-tube');
+    let p = store.getState().config.params;
+    expect(p.core.stripBuildUp).toBe(0);
+    expect(p.cover.innerSlits).toBe(0);
+    expect(deriveDims(p).messages.map((m) => m.code)).not.toContain('inner-slits-dropped');
+    store.getState().actions.applyCorePreset('aluminium-rod');
+    p = store.getState().config.params;
+    expect(p.core.stripBuildUp).toBe(defaultParams().core.stripBuildUp);
+    expect(p.cover.innerSlits).toBe(defaultParams().cover.innerSlits);
+    // A deliberate non-zero count survives the round trip to the rod.
+    store.getState().actions.setParam('cover.innerSlits', 12);
+    store.getState().actions.applyCorePreset('led-tube');
+    store.getState().actions.applyCorePreset('aluminium-rod');
+    expect(store.getState().config.params.cover.innerSlits).toBe(defaultParams().cover.innerSlits);
   });
   it('setHeightMode and setEnum(wireRouting)', () => {
     const store = make();

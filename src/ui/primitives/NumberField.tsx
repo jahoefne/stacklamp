@@ -78,7 +78,8 @@ export function NumberField({
     [],
   );
 
-  const unitText = unit ? ` ${unit}` : '';
+  // "×" is a count marker, not a unit to read out ("0 to 6 ×").
+  const unitText = unit && unit !== '×' ? ` ${unit}` : '';
   const showStatus = (text: string) => {
     setStatus(text);
     if (statusTimer.current) clearTimeout(statusTimer.current);

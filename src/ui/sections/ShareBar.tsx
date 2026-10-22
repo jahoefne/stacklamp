@@ -1,6 +1,16 @@
-import { useEffect, useId, useRef, useState, type FormEvent, type ReactElement } from 'react';
-import { BUILTIN_PRESETS, cleanPresetName, lampStore, selectShareUrl, useLamp, useLampActions } from '../../state';
-import type { LampState, SavedPreset } from '../../state';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactElement } from 'react';
+import {
+  BUILTIN_PRESETS,
+  cleanPresetName,
+  decodeConfig,
+  encodeConfigAuto,
+  lampStore,
+  selectCode,
+  selectShareUrl,
+  useLamp,
+  useLampActions,
+} from '../../state';
+import type { LampConfig, LampState, SavedPreset } from '../../state';
 import { Button } from '../primitives/Button';
 import { IconButton } from '../primitives/IconButton';
 import { Select } from '../primitives/Select';
@@ -11,21 +21,52 @@ const selectSaved = (s: LampState): SavedPreset[] => s.saved;
 
 const BUILTIN_PREFIX = 'b:';
 const SAVED_PREFIX = 's:';
+/** Select value while the lamp matches no preset (shown, never pickable). */
+export const CUSTOM_CHOICE = 'custom';
+
+/** The share code a preset's code becomes once loaded (what `selectCode` then reports). */
+function normalisedCode(code: string): string {
+  const decoded = decodeConfig(code);
+  return decoded ? encodeConfigAuto(decoded.config) : code;
+}
+
+const BUILTIN_CODES: ReadonlyMap<string, string> = new Map(BUILTIN_PRESETS.map((p) => [`${BUILTIN_PREFIX}${p.id}`, normalisedCode(p.code)]));
+
+interface Undoable {
+  verb: 'reset' | 'load';
+  before: LampConfig;
+  /** The share code right after the action: edits since then retire the undo. */
+  after: string;
+}
 
 /**
  * Presets and sharing: load a built-in or saved preset, save the current lamp under a
  * name, delete saved ones (inline confirm), copy the share link, reset to the default lamp.
+ * The select shows "Custom" once the lamp no longer matches the preset it was loaded from.
  */
 export function ShareBar(): ReactElement {
   const saved = useLamp(selectSaved);
   const shareUrl = useLamp(selectShareUrl);
+  const code = useLamp(selectCode);
   const { loadPreset, savePreset, deletePreset, resetAll, loadConfig } = useLampActions();
   const toast = useToast();
-  const [choice, setChoice] = useState(`${BUILTIN_PREFIX}${BUILTIN_PRESETS[0]?.id ?? ''}`);
+  const savedCodes = useMemo(
+    () => new Map<string, string>(saved.map((p) => [`${SAVED_PREFIX}${p.name}`, normalisedCode(p.code)])),
+    [saved],
+  );
+  const codeOf = (key: string): string | undefined => BUILTIN_CODES.get(key) ?? savedCodes.get(key);
+  /** The first preset (built-in, then saved) the lamp matches exactly. */
+  const matching = (c: string): string | null => {
+    for (const [key, v] of BUILTIN_CODES) if (v === c) return key;
+    for (const [key, v] of savedCodes) if (v === c) return key;
+    return null;
+  };
+  const [choice, setChoice] = useState(() => matching(code) ?? CUSTOM_CHOICE);
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [fallback, setFallback] = useState(false);
+  const [undo, setUndo] = useState<Undoable | null>(null);
   const presetId = useId();
   const nameId = useId();
   const linkId = useId();
@@ -33,6 +74,7 @@ export function ShareBar(): ReactElement {
   const linkRef = useRef<HTMLInputElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
   const saveToggleRef = useRef<HTMLButtonElement>(null);
+  const resetRef = useRef<HTMLButtonElement>(null);
   const trashRefs = useRef(new Map<string, HTMLButtonElement>());
 
   useEffect(() => {
@@ -41,26 +83,46 @@ export function ShareBar(): ReactElement {
   useEffect(() => {
     if (fallback) linkRef.current?.select();
   }, [fallback]);
-  // Keep the select on an existing entry when a saved preset disappears.
-  useEffect(() => {
-    if (choice.startsWith(SAVED_PREFIX) && !saved.some((p) => `${SAVED_PREFIX}${p.name}` === choice))
-      setChoice(`${BUILTIN_PREFIX}${BUILTIN_PRESETS[0]?.id ?? ''}`);
-  }, [saved, choice]);
 
-  /** Run a config-replacing action and offer to undo it. */
-  const withUndo = (run: () => boolean | void, text: (ok: boolean) => string) => {
+  // "Custom" once the lamp drifts from the preset it matched; back to a preset's name when
+  // it matches one again (undo, reset); off a saved preset that was deleted.
+  const last = useRef({ choice, matched: codeOf(choice) === code });
+  useEffect(() => {
+    const matched = codeOf(choice) === code;
+    if (choice === CUSTOM_CHOICE) {
+      const found = matching(code);
+      if (found) setChoice(found);
+    } else if (choice.startsWith(SAVED_PREFIX) && !savedCodes.has(choice)) {
+      setChoice(matching(code) ?? CUSTOM_CHOICE);
+    } else if (!matched && last.current.choice === choice && last.current.matched) {
+      setChoice(CUSTOM_CHOICE);
+    }
+    last.current = { choice, matched };
+  });
+
+  /** Run a config-replacing action; offer to undo it in a toast and, until the next edit, in the bar. */
+  const withUndo = (verb: Undoable['verb'], run: () => boolean | void, text: string) => {
     const before = lampStore.getState().config;
-    const ok = run() !== false;
-    if (ok) toast.show({ text: text(ok), action: { label: 'Undo', onAction: () => loadConfig(before, 'preset') } });
+    if (run() === false) return;
+    const after = selectCode(lampStore.getState());
+    setUndo({ verb, before, after });
+    toast.show({ text, action: { label: 'Undo', onAction: () => loadConfig(before, 'preset') } });
+  };
+
+  const onUndo = () => {
+    if (!undo) return;
+    loadConfig(undo.before, 'preset');
+    setUndo(null);
+    toast.dismiss();
+    // The undo button goes away with the undo: keep focus in the row.
+    resetRef.current?.focus();
   };
 
   const onLoad = () => {
+    if (choice === CUSTOM_CHOICE) return;
     const key = choice.startsWith(BUILTIN_PREFIX) ? choice.slice(BUILTIN_PREFIX.length) : choice.slice(SAVED_PREFIX.length);
     const label = BUILTIN_PRESETS.find((p) => p.id === key)?.name ?? key;
-    withUndo(
-      () => loadPreset(key),
-      () => `Loaded “${label}”.`,
-    );
+    withUndo('load', () => loadPreset(key), `Loaded “${label}”.`);
   };
 
   const onSave = (e: FormEvent) => {
@@ -94,6 +156,8 @@ export function ShareBar(): ReactElement {
 
   const exists = cleanPresetName(name) !== '' && saved.some((p) => p.name === cleanPresetName(name));
   const selectedBuiltin = BUILTIN_PRESETS.find((p) => `${BUILTIN_PREFIX}${p.id}` === choice);
+  const custom = choice === CUSTOM_CHOICE;
+  const canUndo = undo !== null && undo.after === code;
 
   return (
     <section className={styles.bar} aria-labelledby={`${presetId}-title`}>
@@ -111,8 +175,9 @@ export function ShareBar(): ReactElement {
           size="sm"
           value={choice}
           onChange={(e) => setChoice(e.target.value)}
-          aria-describedby={selectedBuiltin ? `${presetId}-desc` : undefined}
+          aria-describedby={selectedBuiltin || custom ? `${presetId}-desc` : undefined}
           options={[
+            ...(custom ? [{ value: CUSTOM_CHOICE, label: 'Custom', disabled: true }] : []),
             {
               label: 'Built-in',
               options: BUILTIN_PRESETS.map((p) => ({ value: `${BUILTIN_PREFIX}${p.id}`, label: p.name })),
@@ -122,13 +187,17 @@ export function ShareBar(): ReactElement {
               : []),
           ]}
         />
-        <Button size="sm" variant="secondary" onClick={onLoad}>
+        <Button size="sm" variant="secondary" onClick={onLoad} disabled={custom}>
           Load
         </Button>
       </div>
       {selectedBuiltin ? (
         <p id={`${presetId}-desc`} className={styles.hint}>
           {selectedBuiltin.description}
+        </p>
+      ) : custom ? (
+        <p id={`${presetId}-desc`} className={styles.hint}>
+          Edited since loading. Save it as a preset to keep it.
         </p>
       ) : null}
 
@@ -139,18 +208,14 @@ export function ShareBar(): ReactElement {
         <Button ref={saveToggleRef} size="sm" variant="ghost" icon="plus" aria-expanded={saving} onClick={() => setSaving((v) => !v)}>
           Save preset
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() =>
-            withUndo(
-              () => resetAll(),
-              () => 'Reset to the default lamp.',
-            )
-          }
-        >
+        <Button ref={resetRef} size="sm" variant="ghost" onClick={() => withUndo('reset', () => resetAll(), 'Reset to the default lamp.')}>
           Reset
         </Button>
+        {canUndo ? (
+          <Button size="sm" variant="ghost" onClick={onUndo} data-testid="undo-config">
+            {undo.verb === 'reset' ? 'Undo reset' : 'Undo load'}
+          </Button>
+        ) : null}
       </div>
 
       {saving ? (
@@ -224,12 +289,10 @@ export function ShareBar(): ReactElement {
                     <button
                       type="button"
                       className={styles.savedLoad}
-                      onClick={() =>
-                        withUndo(
-                          () => loadPreset(p.name),
-                          () => `Loaded “${p.name}”.`,
-                        )
-                      }
+                      onClick={() => {
+                        setChoice(`${SAVED_PREFIX}${p.name}`);
+                        withUndo('load', () => loadPreset(p.name), `Loaded “${p.name}”.`);
+                      }}
                     >
                       {p.name}
                     </button>

@@ -73,7 +73,7 @@ export function HeightSummary(): ReactElement {
           Inner {d.inner.count} × {fmt(d.inner.height, 1)} mm
         </span>
         <span aria-hidden="true"> · </span>
-        <strong className={styles.total}>Lamp {fmt(d.totalHeight, 0)} mm tall</strong>
+        <strong className={styles.total}>Lamp {fmt(d.totalHeight, 1)} mm tall</strong>
       </p>
       {cut ? (
         <p className={styles.cut} aria-live="polite">

@@ -56,7 +56,8 @@ describe('App', () => {
     const summary = screen.getByTestId('height-summary');
     const n0 = lampStore.getState().config.params.core.length;
     expect(n0).toBe(1500);
-    expect(summary.textContent).toMatch(/Outer \d+ × [\d.]+ mm · Inner \d+ × [\d.]+ mm · Lamp [\d,]+ mm tall/);
+    // Numbers are never grouped ("1533.5", like the "1500" in the fields).
+    expect(summary.textContent).toMatch(/^Outer \d+ × [\d.]+ mm · Inner \d+ × [\d.]+ mm · Lamp \d{4}(\.\d)? mm tall$/);
 
     const rod = screen.getByRole('textbox', { name: /rod length/i });
     await user.clear(rod);

@@ -1,11 +1,10 @@
 import { useId, type ReactElement } from 'react';
 import { PRINTER_PRESETS } from '../../geometry';
 import type { PrinterId } from '../../geometry';
-import { selectMessages, useDims, useLamp, useLampActions } from '../../state';
+import { useDims, useLamp, useLampActions } from '../../state';
 import type { LampState } from '../../state';
 import { ParamNumberField } from '../primitives/ParamNumberField';
 import { Select } from '../primitives/Select';
-import { UiIcon } from '../primitives/UiIcon';
 import { fmt } from '../primitives/format';
 import { PanelSection } from './PanelSection';
 import panel from './panel.module.css';
@@ -15,17 +14,12 @@ const PRINTER_OPTIONS = PRINTER_IDS.map((id) => ({ value: id, label: PRINTER_PRE
 
 const selectPrinter = (s: LampState): PrinterId => s.config.params.printer.preset;
 
-/** The engine's print note for the base (all messages are listed under Checks as well). */
-const BASE_NOTES = new Set(['pocket-needs-supports']);
-
-/** 04 Base & printer: base and weight plate sizes, printer bed. */
+/** 04 Base & printer: base and weight plate sizes, printer bed. Print notes live under Checks. */
 export function BaseSection(): ReactElement {
   const printer = useLamp(selectPrinter);
-  const messages = useLamp(selectMessages);
   const d = useDims();
   const { applyPrinterPreset } = useLampActions();
   const printerId = useId();
-  const notes = messages.filter((m) => BASE_NOTES.has(m.code));
   const custom = printer === 'custom';
   const bed = PRINTER_PRESETS[printer].bed;
 
@@ -66,12 +60,6 @@ export function BaseSection(): ReactElement {
           </>
         ) : null}
       </div>
-      {notes.map((m) => (
-        <p key={m.code} className={panel.note}>
-          <UiIcon name="info" size={16} className={panel.noteIcon} />
-          <span>{m.text}</span>
-        </p>
-      ))}
     </PanelSection>
   );
 }

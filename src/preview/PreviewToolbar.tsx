@@ -1,19 +1,21 @@
 /**
- * View controls for the preview: view mode, reset view, glow. Plain buttons styled
- * with design tokens (with fallbacks); no three.js, safe for the main chunk.
+ * View controls on the stage (DESIGN §10 "PreviewToolbar"): the view switch top-left, the
+ * glow toggle and reset view top-right, as an overlay inset 12 px inside the dark stage.
+ * The gaps between the controls let pointer events through to the canvas. No three.js
+ * here: safe for the main chunk.
  */
 import type { ReactElement } from 'react';
+import { IconButton } from '../ui/primitives/IconButton';
+import { SegmentedControl, type SegmentOption } from '../ui/primitives/SegmentedControl';
+import { cx } from '../ui/primitives/format';
 import styles from './preview.module.css';
-import type { GlowMode, PreviewToolbarProps, ViewMode } from './types';
+import type { PreviewToolbarProps, ViewMode } from './types';
 
-const MODES: { id: ViewMode; label: string; hint: string }[] = [
-  { id: 'assembled', label: 'Assembled', hint: 'The lamp as it stands' },
-  { id: 'inner', label: 'Inner', hint: 'Hide the outer tubes to see the inner stack' },
-  { id: 'exploded', label: 'Exploded', hint: 'Pull the parts apart' },
+const MODES: readonly SegmentOption<ViewMode>[] = [
+  { value: 'assembled', label: 'Assembled', title: 'The lamp as it stands' },
+  { value: 'inner', label: 'Inner', title: 'Hide the outer tubes to see the inner stack' },
+  { value: 'exploded', label: 'Exploded', title: 'Pull the parts apart' },
 ];
-
-const GLOW_NEXT: Record<GlowMode, GlowMode> = { auto: 'on', on: 'off', off: 'auto' };
-const GLOW_LABEL: Record<GlowMode, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
 export function PreviewToolbar({
   viewMode,
@@ -23,52 +25,36 @@ export function PreviewToolbar({
   glow,
   onGlow,
   autoTier,
+  fallback = false,
   className,
 }: PreviewToolbarProps): ReactElement {
-  const glowDetail = glow === 'auto' && autoTier ? ` (${autoTier === 'high' ? 'bloom on' : 'bloom off for speed'})` : '';
+  // The toggle is binary: off, or auto (bloom where the device is fast enough). A forced
+  // 'on' from a link or storage counts as on and turns off from here like auto does.
+  const glowOn = glow !== 'off';
+  const detail = glowOn && glow === 'auto' && autoTier === 'low' ? ' · bloom off on this device for speed' : '';
   return (
-    <div className={[styles.toolbar, className].filter(Boolean).join(' ')} role="toolbar" aria-label="Preview">
-      <div className={styles.segmented} role="radiogroup" aria-label="View">
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            role="radio"
-            aria-checked={viewMode === m.id}
-            title={m.hint}
-            className={styles.segment}
-            data-active={viewMode === m.id || undefined}
-            onClick={() => onViewMode(m.id)}
-            onKeyDown={(e) => {
-              if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-              e.preventDefault();
-              const i = MODES.findIndex((x) => x.id === viewMode);
-              const next = MODES[(i + (e.key === 'ArrowRight' ? 1 : MODES.length - 1)) % MODES.length]!;
-              onViewMode(next.id);
-              const group = e.currentTarget.parentElement;
-              group?.querySelector<HTMLButtonElement>(`[data-mode="${next.id}"]`)?.focus();
-            }}
-            data-mode={m.id}
-            tabIndex={viewMode === m.id ? 0 : -1}
-          >
-            {m.label}
-          </button>
-        ))}
+    <div className={cx(styles.toolbar, className)} role="toolbar" aria-label="Preview">
+      <SegmentedControl label="View" tone="stage" options={MODES} value={viewMode} onChange={onViewMode} />
+      <div className={styles.tools}>
+        <IconButton
+          icon="eye"
+          tone="stage"
+          label="Glow"
+          title={`Glow ${glowOn ? 'on' : 'off'}${detail}`}
+          pressed={glowOn}
+          disabled={fallback}
+          onClick={() => onGlow(glowOn ? 'off' : 'auto')}
+        />
+        <IconButton
+          icon="resetView"
+          tone="stage"
+          label="Reset view"
+          title="Back to the default camera"
+          disabled={fallback}
+          onClick={onResetView}
+        />
       </div>
-      <button type="button" className={styles.toolButton} onClick={onResetView} title="Back to the default camera">
-        Reset view
-      </button>
-      <button
-        type="button"
-        className={styles.toolButton}
-        onClick={() => onGlow(GLOW_NEXT[glow])}
-        aria-label={`Glow: ${GLOW_LABEL[glow]}${glowDetail}. Switch to ${GLOW_LABEL[GLOW_NEXT[glow]]}.`}
-        title="Bloom halo around the light: auto adapts to your device"
-        data-glow={glow}
-      >
-        Glow <span className={styles.toolValue}>{GLOW_LABEL[glow]}</span>
-      </button>
-      {/* The canvas shows the visual "Updating…" badge; announce only failures. */}
+      {/* The status pill shows the visual state; announce only failures. */}
       <span className={styles.srOnly} aria-live="polite">
         {status === 'error' ? 'The preview could not be updated.' : ''}
       </span>

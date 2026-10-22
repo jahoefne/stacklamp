@@ -1,17 +1,8 @@
 .pane {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
   height: 100%;
   min-height: 0;
-}
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-3);
 }
 
 .stage {
@@ -28,8 +19,15 @@
   min-height: 0;
 }
 
-/* Bottom of the stage: status pill left, orbit hint right (the touch button owns the
-   bottom-right corner on coarse pointers, so the hint is not rendered there). */
+/* The schematic fallback keeps clear of the toolbar (12 + 44 + 12) above it and the
+   status pill (12 + 28 + 12) below it; the 3D camera frames the lamp inside the box itself. */
+.stage[data-fallback] > .canvas {
+  padding-top: calc(2 * var(--space-3) + var(--target-min));
+  padding-bottom: calc(2 * var(--space-3) + 28px);
+}
+
+/* Bottom of the stage: status pill left, orbit hint right (on coarse pointers the "Done"
+   button owns the bottom-right corner, so the hint is not rendered there). */
 .overlay {
   position: absolute;
   right: var(--space-3);
@@ -43,18 +41,6 @@
   pointer-events: none;
 }
 
-/* The schematic fallback has its caption at the bottom. */
-.overlayTop {
-  top: var(--space-3);
-  bottom: auto;
-}
-
-/* …so the drawing starts below the pill (12 + 28 + 12): on phones its top "Ø 200"
-   dimension sat under the pill. */
-.stage:has(> .overlayTop) > .canvas {
-  padding-top: calc(2 * var(--space-3) + 28px);
-}
-
 .hint {
   margin: 0;
   font-size: var(--fs-xs);
@@ -62,27 +48,10 @@
   text-align: right;
 }
 
-/* Phones: the stage goes full bleed; the toolbar stays inside the gutters. The view switch
-   and the two tool buttons can't share a row at 375 px, so instead of a ragged wrap they
-   form two full-width rows: [Assembled | Inner | Exploded] over [Reset view][Glow]. */
+/* Phones: the stage goes full bleed. */
 @media (max-width: 599.98px) {
   .stage {
     margin-inline: calc(-1 * var(--layout-gutter));
-  }
-
-  .toolbar > [role='toolbar'] {
-    display: grid;
-    flex: 1 1 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .toolbar > [role='toolbar'] > [role='radiogroup'] {
-    display: flex;
-    grid-column: 1 / -1;
-  }
-
-  .toolbar > [role='toolbar'] > [role='radiogroup'] > * {
-    flex: 1 1 0;
   }
 }
 

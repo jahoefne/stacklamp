@@ -6,7 +6,7 @@
  */
 import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { CORE_PRESETS, PRINTER_PRESETS, getParam, setParam as setParamValue } from '../geometry';
+import { CORE_PRESETS, PRINTER_PRESETS, defaultParams, getParam, setParam as setParamValue } from '../geometry';
 import type {
   CoreKind,
   EnumParamPath,
@@ -66,7 +66,7 @@ export interface LampActions {
   setParam(path: NumericParamPath, value: number): void;
   /** Set an enum param. 'core.kind' and 'printer.preset' delegate to applyCorePreset / applyPrinterPreset. */
   setEnum<P extends EnumParamPath>(path: P, value: EnumValue<P>): void;
-  /** Core kind + the preset's diameter. */
+  /** Core kind + the preset's diameter; the LED tube also zeroes the strip build-up and inner slits (the rod restores their defaults). */
   applyCorePreset(kind: CoreKind): void;
   /** Printer preset + its bed size ('custom' keeps the current bed). */
   applyPrinterPreset(id: PrinterId): void;
@@ -210,7 +210,18 @@ export function createLampStore(init: LampStoreInit = {}) {
           const preset = CORE_PRESETS[kind];
           if (!preset) return;
           const p = get().config.params;
-          setParams({ ...p, core: { ...p.core, kind, diameter: preset.diameter } });
+          const d = defaultParams();
+          // An LED tube carries no strip, and its boss leaves no room for the inner air slits
+          // (they would be dropped with a warning), so both go to 0 like the built-in LED-tube
+          // preset. Back on the rod, zeros return to the defaults.
+          const tube = kind === 'led-tube';
+          const stripBuildUp = tube ? 0 : p.core.stripBuildUp === 0 ? d.core.stripBuildUp : p.core.stripBuildUp;
+          const innerSlits = tube ? 0 : p.cover.innerSlits === 0 ? d.cover.innerSlits : p.cover.innerSlits;
+          setParams({
+            ...p,
+            core: { ...p.core, kind, diameter: preset.diameter, stripBuildUp },
+            cover: { ...p.cover, innerSlits },
+          });
         },
         applyPrinterPreset(id) {
           const preset = PRINTER_PRESETS[id];

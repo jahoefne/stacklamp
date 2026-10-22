@@ -33,6 +33,7 @@ export function LazyPreviewCanvas(props: PreviewCanvasProps): ReactElement {
       viewMode={props.viewMode}
       ariaLabel={props.ariaLabel}
       reason={reason}
+      {...(props.onFallback ? { onShown: props.onFallback } : {})}
       {...(props.className ? { className: props.className } : {})}
     />
   );

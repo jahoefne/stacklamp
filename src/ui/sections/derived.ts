@@ -106,13 +106,13 @@ export function grams(g: number): string {
 }
 
 /** Scroll an element into view (instant under reduced motion) and focus it. */
-export function scrollAndFocus(el: HTMLElement | null, focusEl: HTMLElement | null = el): void {
+export function scrollAndFocus(el: HTMLElement | null, focusEl: HTMLElement | null = el, block: ScrollLogicalPosition = 'start'): void {
   if (!el) return;
   const reduce =
     typeof window !== 'undefined' &&
     typeof window.matchMedia === 'function' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  el.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  el.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block });
   focusEl?.focus({ preventScroll: true });
 }
 

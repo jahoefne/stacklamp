@@ -17,13 +17,16 @@ export interface ParamNumberFieldProps {
   className?: string;
 }
 
+/** Unit chip of count parameters (screws, slits, intakes). */
+export const COUNT_UNIT = '×';
+
 /** The DOM id of a parameter's input (WarningsList jumps to it). */
 export const fieldId = (path: string): string => `field-${path}`;
 
 /**
  * NumberField bound to one numeric lamp parameter: label, unit, range, step and hint come
  * from PARAM_META; engine messages with this path show under it. Percent params are stored
- * as fractions and shown × 100.
+ * as fractions and shown × 100; counts get a "×" unit chip.
  */
 export function ParamNumberField({
   path,
@@ -41,7 +44,8 @@ export function ParamNumberField({
   const scale = percent ? 100 : 1;
   const precision = percent ? Math.max(0, spec.precision - 2) : spec.precision;
   const onChange = useCallback((v: number) => set(percent ? v / 100 : v), [set, percent]);
-  const unit = spec.unit === '' ? undefined : spec.unit;
+  // Counts (unit '') get a "×" chip so their boxes line up with the mm fields (DESIGN §11 "11 ×").
+  const unit = spec.unit === '' ? COUNT_UNIT : spec.unit;
   const shownHint = hint === null ? undefined : (hint ?? spec.hint);
 
   return (
@@ -57,7 +61,7 @@ export function ParamNumberField({
       messages={messages}
       slider={slider}
       size={size}
-      {...(unit !== undefined ? { unit } : {})}
+      unit={unit}
       {...(shownHint !== undefined ? { hint: shownHint } : {})}
       {...(labelAside !== undefined ? { labelAside } : {})}
       {...(disabled !== undefined ? { disabled } : {})}

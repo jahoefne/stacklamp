@@ -33,9 +33,9 @@ export interface ToastApi {
   dismiss(): void;
 }
 
-/** Info toasts close after 4 s; toasts with an action after 8 s; errors stay until closed. */
+/** Info toasts close after 4 s; toasts with an action after 10 s; errors stay until closed. */
 export const TOAST_MS = 4000;
-const ACTION_MS = 8000;
+export const ACTION_MS = 10_000;
 
 const ToastContext = createContext<ToastApi | null>(null);
 const selectNotice = (s: LampState): Notice | null => s.notice;
@@ -97,12 +97,30 @@ export function useToast(): ToastApi {
 function ToastViewport({ toast, onDismiss }: { toast: CurrentToast | null; onDismiss(): void }): ReactElement {
   const [paused, setPaused] = useState(false);
   const kind = toast?.kind ?? 'info';
+  const rootRef = useRef<HTMLDivElement>(null);
+  /** The control that was focused when the toast appeared (usually the button that caused it). */
+  const opener = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!toast || paused || kind === 'error') return;
     const t = setTimeout(onDismiss, toast.action ? ACTION_MS : TOAST_MS);
     return () => clearTimeout(t);
   }, [toast, paused, kind, onDismiss]);
+
+  const key = toast?.key;
+  useEffect(() => {
+    if (key === undefined) return;
+    const el = document.activeElement;
+    opener.current = el instanceof HTMLElement && el !== document.body && !rootRef.current?.contains(el) ? el : null;
+  }, [key]);
+
+  // Closing from inside the toast would drop focus to <body>: hand it back to the opener.
+  const close = () => {
+    const el = opener.current;
+    const inside = rootRef.current?.contains(document.activeElement) ?? false;
+    if (inside && el?.isConnected && !(el as HTMLButtonElement).disabled) el.focus();
+    onDismiss();
+  };
 
   return (
     <div className={styles.viewport}>
@@ -111,6 +129,7 @@ function ToastViewport({ toast, onDismiss }: { toast: CurrentToast | null; onDis
         {toast ? (
           <div
             key={toast.key}
+            ref={rootRef}
             className={cx(styles.toast, kind === 'error' && styles.error)}
             role={kind === 'error' ? 'alert' : 'status'}
             onMouseEnter={() => setPaused(true)}
@@ -126,13 +145,13 @@ function ToastViewport({ toast, onDismiss }: { toast: CurrentToast | null; onDis
                 className={styles.action}
                 onClick={() => {
                   toast.action?.onAction();
-                  onDismiss();
+                  close();
                 }}
               >
                 {toast.action.label}
               </button>
             ) : null}
-            <button type="button" className={styles.close} aria-label="Close message" title="Close" onClick={onDismiss}>
+            <button type="button" className={styles.close} aria-label="Close message" title="Close" onClick={close}>
               <Icon name="close" size={18} />
             </button>
           </div>

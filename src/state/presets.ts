@@ -23,7 +23,7 @@ export const BUILTIN_PRESETS: readonly BuiltinPreset[] = [
   {
     id: 'classic-1500',
     name: 'Classic 1500',
-    description: '1.5 m aluminium tube with LED strip; amber → orange → red outer stack, clear inner stack.',
+    description: '1.5 m aluminium tube with LED strip; amber, orange and red outer stack, clear inner stack.',
     code: 'v=1',
   },
   {
@@ -35,13 +35,13 @@ export const BUILTIN_PRESETS: readonly BuiltinPreset[] = [
   {
     id: 'led-tube-28',
     name: 'LED tube 1200',
-    description: 'Single-ended 28 mm LED tube, 1200 mm, cable through the socket, no inner cover slits; blue → teal → green.',
+    description: 'Single-ended 28 mm LED tube, 1200 mm, cable through the socket, no inner cover slits; blue to teal to green.',
     code: 'v=1&cp=l&rl=1200&sb=0&is=0&go=g678',
   },
   {
     id: 'tall-2000',
     name: 'Tall 2000',
-    description: '2 m rod with 180 mm segments; mirrored amber → violet gradient.',
+    description: '2 m rod with 180 mm segments; mirrored amber-to-violet gradient.',
     code: 'v=1&rl=2000&ih=180&oh=180&go=g2345m',
   },
 ];

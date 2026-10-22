@@ -1,6 +1,6 @@
 /**
  * Small formatting and parsing helpers shared by the UI. Numbers are shown with a space
- * before the unit and, above 999, with thousands separators ("1,534 mm").
+ * before the unit and never grouped ("1533.5 mm", like the "1500" in the fields; DESIGN §11).
  */
 
 const nf = new Map<string, Intl.NumberFormat>();
@@ -18,10 +18,10 @@ function formatter(maxDigits: number, minDigits: number, grouping: boolean): Int
   return f;
 }
 
-/** 1533.5 → "1,534" (digits = 0), 154.5 → "154.5" (digits = 1). Trailing zeros dropped unless `fixed`. */
+/** 1533.5 → "1534" (digits = 0), 154.5 → "154.5" (digits = 1). Trailing zeros dropped unless `fixed`. */
 export function fmt(n: number, digits = 1, fixed = false): string {
   if (!Number.isFinite(n)) return '–';
-  return formatter(digits, fixed ? digits : 0, true).format(n);
+  return formatter(digits, fixed ? digits : 0, false).format(n);
 }
 
 /** Value with unit and a space: "154.5 mm". */

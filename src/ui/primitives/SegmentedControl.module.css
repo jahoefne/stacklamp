@@ -75,3 +75,33 @@
     min-height: calc(var(--target-min) - 2 * var(--border-bold));
   }
 }
+
+/* ── Stage variant (on the dark preview) ─────────────────────────────── */
+
+.stage {
+  border-color: var(--stage-line);
+  background: var(--stage-bg);
+}
+
+.stage .segment {
+  color: var(--stage-ink);
+}
+
+.stage .segment + .segment {
+  border-left-color: var(--stage-line);
+}
+
+@media (hover: hover) {
+  .stage .segment:hover:not(:disabled):not([aria-checked='true']) {
+    background: color-mix(in srgb, var(--stage-ink) 12%, var(--stage-bg));
+  }
+}
+
+.stage .segment[aria-checked='true'] {
+  background: var(--stage-ink);
+  color: var(--stage-bg);
+}
+
+.stage .segment:disabled {
+  color: var(--stage-line);
+}

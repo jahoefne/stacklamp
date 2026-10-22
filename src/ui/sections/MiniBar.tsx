@@ -9,8 +9,9 @@ const selectRunning = (s: LampState): boolean => s.exportJob.phase === 'running'
 
 /**
  * Phone/tablet bar stuck to the bottom of the configurator: band counts, height and a
- * Download button. The first press shows the download panel (format, warnings); once the
- * panel has been seen it downloads directly. Hidden while the panel is on screen.
+ * Download button. The first press scrolls to the Download ZIP button (format and blockers
+ * around it); once the panel has been seen it downloads directly. Hidden while the panel
+ * is on screen.
  */
 export function MiniBar({ targetId = 'download' }: { targetId?: string }): ReactElement {
   const d = useDims();
@@ -41,14 +42,16 @@ export function MiniBar({ targetId = 'download' }: { targetId?: string }): React
     }
     seen.current = true;
     const panel = document.getElementById(targetId);
-    const button = panel?.querySelector<HTMLElement>('[data-testid="download-zip"]:not(:disabled)') ?? panel ?? null;
-    scrollAndFocus(panel, button);
+    const button = panel?.querySelector<HTMLButtonElement>('[data-testid="download-zip"]') ?? null;
+    // The panel is taller than a phone screen: bring the button itself into view (with the
+    // tables above it and the blockers under it), and focus it when it can be pressed.
+    scrollAndFocus(button ?? panel, button && !button.disabled ? button : panel, 'center');
   };
 
   return (
     <div className={cx(styles.bar, panelVisible && styles.hidden)} aria-hidden={panelVisible || undefined}>
       <p className={styles.summary}>
-        <span className={styles.big}>{fmt(d.totalHeight, 0)} mm</span>
+        <span className={styles.big}>{fmt(d.totalHeight, 1)} mm</span>
         <span className={styles.small}>
           {d.outer.count} + {d.inner.count} rings
         </span>

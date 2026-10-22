@@ -4,7 +4,7 @@
  * through import.meta.glob so this file never breaks the build if it moves), else a
  * plain to-scale elevation. No three.js here: this stays in the main chunk.
  */
-import type { ComponentType, ReactElement } from 'react';
+import { useEffect, useRef, type ComponentType, type ReactElement } from 'react';
 import type { DerivedDims, PetgColour } from '../geometry';
 import styles from './preview.module.css';
 import type { PreviewBands, PreviewFallbackProps } from './types';
@@ -34,8 +34,8 @@ const Schematic: ComponentType<SchematicProps> | null =
   illustrationModule?.StackIllustration ?? illustrationModule?.default ?? null;
 
 const CAPTIONS: Record<NonNullable<PreviewFallbackProps['reason']>, string> = {
-  'no-webgl': 'This browser cannot show the 3D preview, so here is the lamp as a to-scale drawing.',
-  error: 'The 3D preview stopped working, so here is the lamp as a to-scale drawing.',
+  'no-webgl': 'No 3D preview in this browser. Here is a to-scale drawing instead.',
+  error: 'The 3D preview stopped working. Here is a to-scale drawing instead.',
   loading: 'Loading the 3D preview…',
 };
 
@@ -61,9 +61,15 @@ export function PreviewFallback({
   palette,
   ariaLabel,
   reason = 'no-webgl',
+  onShown,
   className,
 }: PreviewFallbackProps): ReactElement {
   const title = ariaLabel ?? 'Schematic drawing of the lamp';
+  const onShownRef = useRef(onShown);
+  onShownRef.current = onShown;
+  useEffect(() => {
+    if (reason !== 'loading') onShownRef.current?.(reason);
+  }, [reason]);
   const inner = hexesFor(bands.inner, palette);
   const outer = hexesFor(bands.outer, palette);
   return (

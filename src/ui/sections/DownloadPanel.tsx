@@ -99,7 +99,7 @@ export function DownloadPanel(): ReactElement {
 
       <p className={panel.note}>
         <UiIcon name="info" size={16} className={panel.noteIcon} />
-        <span>Slicers ignore 3MF colours — PRINT-PLAN.md lists how many to print in each colour.</span>
+        <span>Slicers ignore colours inside 3MF files. Load each segment file with the filament the print plan lists.</span>
       </p>
 
       <div className={styles.action}>

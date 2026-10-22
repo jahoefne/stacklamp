@@ -31,6 +31,8 @@ export interface PreviewCanvasProps {
   onGlowAuto?(tier: QualityTier): void;
   /** WebGL context lost; the canvas re-creates itself when the browser restores it. */
   onContextLost?(): void;
+  /** The schematic replaced the canvas (no WebGL, the 3D chunk failed, or the scene threw). */
+  onFallback?(reason: 'no-webgl' | 'error'): void;
   ariaLabel: string;
   /** Increment to animate the camera back to the default framing (wire to the toolbar's reset button). */
   resetViewSignal?: number;
@@ -46,8 +48,10 @@ export interface PreviewToolbarProps {
   onResetView(): void;
   glow: GlowMode;
   onGlow(glow: GlowMode): void;
-  /** Tier the 'auto' glow settled on, shown as a hint ("Glow auto · low"). */
+  /** Tier the 'auto' glow settled on, shown in the glow button's tooltip. */
   autoTier?: QualityTier | null;
+  /** The schematic is shown instead of the 3D canvas: glow and reset view are disabled. */
+  fallback?: boolean;
   className?: string;
 }
 
@@ -59,5 +63,7 @@ export interface PreviewFallbackProps {
   ariaLabel?: string;
   /** Why the schematic is shown; controls the small caption. */
   reason?: 'no-webgl' | 'error' | 'loading';
+  /** Called once the drawing stands in for the canvas (not while 'loading'). */
+  onShown?(reason: 'no-webgl' | 'error'): void;
   className?: string;
 }

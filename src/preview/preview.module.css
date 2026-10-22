@@ -1,4 +1,4 @@
-/* Preview: dark stage, overlays and toolbar. Tokens come from src/ui/styles/tokens.css;
+/* Preview: dark stage, its overlays and the toolbar. Tokens come from src/ui/styles/tokens.css;
    every var() carries a fallback so the preview also works without the stylesheet. */
 
 .stage {
@@ -25,46 +25,14 @@
 
 /* ── Overlays on the stage ─────────────────────────────────────────────── */
 
-.overlayTop {
+/* Touch: a scrim with one centred button until the person opts into orbiting. */
+.scrim {
   position: absolute;
-  top: var(--space-3, 12px);
-  left: var(--space-3, 12px);
+  inset: 0;
   z-index: 1;
-  pointer-events: none;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2, 8px);
-  padding: var(--space-1, 4px) var(--space-3, 12px);
-  border: var(--border-thin, 1px) solid var(--stage-line, #4a433c);
-  border-radius: var(--radius-pill, 999px);
-  background: color-mix(in srgb, var(--stage-bg, #110f12) 80%, transparent);
-  color: var(--stage-ink, #f4eee1);
-  font-size: var(--fs-xs, 0.75rem);
-  font-weight: var(--fw-medium, 500);
-  letter-spacing: var(--tracking-label, 0.08em);
-  text-transform: uppercase;
-  line-height: 1.6;
-}
-
-.badgeDot {
-  width: 8px;
-  height: 8px;
-  border-radius: var(--radius-pill, 999px);
-  background: var(--stage-led, #ffd49a);
-  animation: pulse 1.1s var(--ease-in-out, ease-in-out) infinite alternate;
-}
-
-.badge[data-tone='error'] .badgeDot {
-  background: var(--color-danger, #a3153f);
-  animation: none;
-}
-
-@keyframes pulse {
-  from { opacity: 0.35; }
-  to { opacity: 1; }
+  display: grid;
+  place-items: center;
+  background: var(--color-scrim, rgb(27 24 20 / 0.55));
 }
 
 .overlayBottom {
@@ -142,75 +110,39 @@
   opacity: 0.85;
 }
 
-/* ── Toolbar (sits on paper next to / under the stage) ─────────────────── */
+/* ── Toolbar (overlay on the stage, DESIGN §10) ────────────────────────── */
 
 .toolbar {
+  position: absolute;
+  top: var(--space-3, 12px);
+  right: var(--space-3, 12px);
+  left: var(--space-3, 12px);
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--space-2, 8px);
   font-family: var(--font-body, system-ui, sans-serif);
-  font-size: var(--fs-sm, 0.875rem);
-  color: var(--color-ink, #1b1814);
+  /* Only the controls catch the pointer; the gaps orbit the lamp. */
+  pointer-events: none;
 }
 
-.segmented {
-  display: inline-flex;
-  border: var(--border-bold, 2px) solid var(--color-ink, #1b1814);
-  border-radius: var(--radius-0, 0);
-  background: var(--color-paper, #f4eee1);
+.toolbar > * {
+  pointer-events: auto;
 }
 
-.segment,
-.toolButton {
-  min-height: 2.25rem;
-  padding: 0 var(--space-3, 12px);
-  border: 0;
-  border-radius: var(--radius-0, 0);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-weight: var(--fw-medium, 500);
-  cursor: pointer;
-  transition: background-color var(--dur-fast, 120ms) var(--ease-out, ease-out),
-    color var(--dur-fast, 120ms) var(--ease-out, ease-out);
+.tools {
+  display: flex;
+  gap: var(--space-2, 8px);
+  margin-left: auto;
 }
 
-.segment + .segment {
-  border-left: var(--border-bold, 2px) solid var(--color-ink, #1b1814);
-}
-
-.segment:hover,
-.toolButton:hover {
-  background: var(--color-paper-2, #e8dfcc);
-}
-
-.segment[data-active] {
-  background: var(--color-ink, #1b1814);
-  color: var(--color-paper, #f4eee1);
-}
-
-.toolButton {
-  border: var(--border-bold, 2px) solid var(--color-ink, #1b1814);
-  background: var(--color-paper, #f4eee1);
-}
-
-.toolValue {
-  font-weight: var(--fw-bold, 700);
-}
-
-.segment:focus-visible,
-.toolButton:focus-visible {
-  position: relative;
-  z-index: 1;
-  outline: var(--focus-ring, 3px solid #2e62f0);
-  outline-offset: var(--focus-offset, 2px);
-}
-
-@media (pointer: coarse) {
-  .segment,
-  .toolButton {
-    min-height: var(--target-min, 44px);
+/* Phones: the view switch and both buttons would not share a 375 px row, so the buttons
+   stack in the top-right corner instead of wrapping under the switch. */
+@media (max-width: 599.98px) {
+  .tools {
+    flex-direction: column;
   }
 }
 
@@ -224,10 +156,4 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .badgeDot {
-    animation: none;
-  }
 }

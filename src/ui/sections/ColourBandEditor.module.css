@@ -113,7 +113,21 @@
 }
 
 @media (max-width: 599.98px) {
+  /* The gutter takes no width (it would push the tile pair off centre); the numbers overhang
+     into the column gap on their left when they show. */
+  .grid {
+    grid-template-columns: 0 minmax(88px, 1fr) minmax(88px, 1fr);
+    margin-left: calc(-1 * var(--space-3));
+  }
+
+  .numbers {
+    width: 0;
+    min-width: 0;
+    justify-self: start;
+  }
+
   .number {
+    overflow: visible;
     visibility: hidden;
   }
 

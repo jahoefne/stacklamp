@@ -18,6 +18,8 @@ export interface SegmentedControlProps<T extends string> {
   value: T;
   onChange(value: T): void;
   size?: 'md' | 'sm';
+  /** 'stage' sits on the dark preview (stage-line border, stage-ink text). */
+  tone?: 'paper' | 'stage';
   /** Stretch the segments to fill the row. */
   block?: boolean;
   id?: string;
@@ -36,6 +38,7 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   size = 'md',
+  tone = 'paper',
   block = false,
   id,
   className,
@@ -94,7 +97,7 @@ export function SegmentedControl<T extends string>({
       aria-label={labelledBy ? undefined : label}
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
-      className={cx(styles.group, styles[size], block && styles.block, className)}
+      className={cx(styles.group, styles[size], tone === 'stage' && styles.stage, block && styles.block, className)}
     >
       {options.map((o, i) => {
         const checked = o.value === value;
