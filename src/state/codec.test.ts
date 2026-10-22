@@ -130,7 +130,7 @@ describe('decodeConfig', () => {
     ];
     const c: LampConfig = { ...defaultConfig(), palette, bands: { inner: ['c1', 'c3'], outer: ['red', 'c4', 'clr'] }, gen: { inner: null, outer: null } };
     const code = encodeConfigAuto(c);
-    expect(code).toMatch(/pal=Clear~fff4e0,ncode\+Glow~123abc,Colour\+3~000000,/);
+    expect(code).toMatch(/pal=Clear~fff4dc,ncode\+Glow~123abc,Colour\+3~000000,/);
     const r = decodeOk(code);
     expect(r.issues).toEqual([]);
     expect(r.config.palette.map((p) => p.name)).toEqual([
