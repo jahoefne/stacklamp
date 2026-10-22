@@ -232,7 +232,7 @@ illustration sits under the copy at `min(100%, 360px)` wide.
  ▲ Set the height, pick the colours, download …       │  ─────────────────────  │
                                                       └───────────────────────┘
  [ Configure your lamp ]▖
-  1.5 m tall by default · 4 printable parts · open source (MIT)
+  1.5 m tall by default · 5 printable parts · open source (MIT)
 
 ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  band rule
  Configure your lamp                       (h2, Jost 900 --fs-2xl)  [Copy link] [Presets ▾]
@@ -290,7 +290,7 @@ illustration sits under the copy at `min(100%, 360px)` wide.
  ● Stack printed tubes …
  ▲ Set the height, pick …
  [ Configure your lamp ]▖
- 1.5 m · 4 parts · MIT
+ 1.5 m · 5 parts · MIT
       ┌──────────────┐
       │ hero drawing │ 360 max, centred
       └──────────────┘
@@ -625,7 +625,7 @@ bands.
   2. Stack printed tubes in any colour order to paint the light, zone by zone.
   3. Set the height, pick the colours, download print-ready files. Free, in your browser.
 - CTA (primary, scrolls to the configurator and focuses rod length): **Configure your lamp**
-- Meta (`--fs-sm` ink-2): 1.5 m tall by default · 4 printable parts · open source (MIT)
+- Meta (`--fs-sm` ink-2): 1.5 m tall by default · 5 printable parts · open source (MIT)
 - Illustration title (alt): "A column of amber, orange and red rings around a light core, standing on a round base"
 
 ### Tone

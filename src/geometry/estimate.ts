@@ -13,6 +13,7 @@
  *    scale back), revolved. Cover slits get walls too: their plan area
  *    dilated by the wall thickness is taken out of the plate's core.
  *  - Base: tree supports under the plate pocket ceiling ≈ 8 % of the pocket volume.
+ *  - Plate clamp: printed solid (100 % infill), so the estimate is the volume.
  */
 import { slitPolygons } from './build/cover';
 import type { CrossSection, Scope, Vec2 } from './kernel';
@@ -71,6 +72,11 @@ export function printedSegment(volume: number, spec: SegmentSpec): number {
 export function printedBase(s: Scope, volume: number, spec: BaseSpec, arcSegments: number): number {
   const core = coreVolume(s, baseProfile(spec, arcSegments), BASE_PRINT, arcSegments);
   return volume - (1 - BASE_PRINT.infill) * core + supportVolume(spec.pocketRadius, spec.pocketDepth);
+}
+
+/** The clamp is printed solid: a 3 mm disc whose screw head bears on it. */
+export function printedClamp(volume: number): number {
+  return volume;
 }
 
 export function printedCover(s: Scope, volume: number, spec: CoverSpec, arcSegments: number, cutterSegments: number): number {

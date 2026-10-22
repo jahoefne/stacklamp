@@ -109,7 +109,7 @@ export function printPlanMarkdown(input: DocInput): string {
   out.push(
     `Total ≈ ${fixed(bom.totalGrams, 0)} g / ${fixed(bom.totalMetres, 0)} m of ${FILAMENT_DIAMETER_MM} mm PETG (density ${PETG_DENSITY_G_CM3} g/cm³). ` +
       'The estimates are what the slicer extrudes with the settings below: vase lines with rounded flanks for the segments, ' +
-      `walls + 20 % infill for the base and cover; the base includes ≈ ${fixed(supportGrams, 0)} g of tree supports.`,
+      `walls + 20 % infill for the base and cover, the plate clamp solid; the base includes ≈ ${fixed(supportGrams, 0)} g of tree supports.`,
     '',
   );
 
@@ -176,7 +176,7 @@ export function printPlanMarkdown(input: DocInput): string {
           : ''
       }.`,
       '- 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers, elephant-foot compensation 0.15 mm.',
-      `- **Tree supports, on build plate only**: the ${num(dims.base.pocketDiameter)} mm plate pocket in the underside has a flat ceiling. The cable tunnel has a 45° teardrop roof and needs no support.`,
+      `- **Tree supports, on build plate only**: the ${num(dims.base.pocketDiameter)} mm plate pocket in the underside has a flat ceiling. The Ø ${num(dims.base.bossDiameter)} mm boss hanging from its middle ends in a 45° tip and needs only a small support under its flat; the cable tunnel has a 45° teardrop roof and needs none.`,
     ].join('\n'),
     '',
   );
@@ -185,6 +185,14 @@ export function printPlanMarkdown(input: DocInput): string {
     [
       '- Print plate-down, as exported (rings and boss pointing up), no supports. The top edge is a 45° chamfer blending into a round, so nothing overhangs more than 45°.',
       '- 3 walls, 20 % infill, 0.2 mm layers for a clean top surface, elephant-foot compensation 0.15 mm.',
+    ].join('\n'),
+    '',
+  );
+  out.push('### Plate clamp — normal mode', '');
+  out.push(
+    [
+      `- Print as exported (flange on the bed, the countersink opening downwards), no supports: the countersink is a 45° cone.`,
+      `- 3 walls, **100 % infill** with the aligned rectilinear pattern (Bambu Studio refuses 100 % with grid, cubic or gyroid): a Ø ${num(dims.base.clampDiameter)} × ${num(dims.fit['plate-clamp'].size[2])} mm disc whose screw head bears on it. Elephant-foot compensation 0.15 mm.`,
     ].join('\n'),
     '',
   );

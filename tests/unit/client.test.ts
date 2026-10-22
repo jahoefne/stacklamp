@@ -189,11 +189,11 @@ describe('WorkerGeometryClient with the real handler in-process', () => {
     });
     await client.ready;
     const parts = await client.buildParts(defaultParams(), 'preview');
-    expect(parts.map((p) => p.id)).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover']);
+    expect(parts.map((p) => p.id)).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp']);
     const stages: ExportStage[] = [];
     const { zip, fileName } = await client.exportZip({ ...req, includeFitTest: true }, (s) => stages.push(s));
     expect(fileName).toBe('stacklamp-L1500-D200-rod-o11x154.5-i11x154.3.zip');
-    expect(Object.keys(unzipSync(zip))).toHaveLength(8);
+    expect(Object.keys(unzipSync(zip))).toHaveLength(9);
     expect(stages).toContain('fit-test');
     client.dispose();
   });

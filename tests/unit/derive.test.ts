@@ -141,7 +141,13 @@ describe('placements and fit', () => {
     expect(d.placements['outer-segment']).toHaveLength(d.outer.count);
     expect(d.placements['inner-segment']).toHaveLength(d.inner.count);
     expect(d.placements['fit-test']).toHaveLength(0);
+    expect(d.placements['plate-clamp']).toHaveLength(1);
     const z = (m: number[], pz = 0) => applyToPoint(m, [0, 0, pz])[2];
+    // the clamp sits under the plate, its underside the extra pocket depth above the floor
+    expect(z(d.placements['plate-clamp'][0]!)).toBeCloseTo(p.tolerances.plateDepth, 9);
+    expect(d.base.pocketDepth).toBeCloseTo(p.plate.thickness + 3 + p.tolerances.plateDepth, 9);
+    expect(d.base.bossDiameter).toBeCloseTo(p.plate.bore - 2 * p.tolerances.plateRadial, 9);
+    expect(d.base.clampScrewLength).toBe(25);
     expect(z(d.placements['outer-segment'][0]!)).toBeCloseTo(d.base.topZ + p.base.footGap, 9);
     expect(z(d.placements['outer-segment'][1]!) - z(d.placements['outer-segment'][0]!)).toBeCloseTo(d.outer.pitch, 9);
     const last = d.placements['outer-segment'][d.outer.count - 1]!;
@@ -155,8 +161,9 @@ describe('placements and fit', () => {
     expect(det).toBeCloseTo(1, 12);
   });
   it('fit sizes', () => {
-    expect(d.fit.base.size).toEqual([240, 240, 78]);
+    expect(d.fit.base.size).toEqual([240, 240, 81]);
     expect(d.fit['top-cover'].size[2]).toBeCloseTo(23, 9);
+    expect(d.fit['plate-clamp'].size).toEqual([50, 50, 3]);
     expect(d.fit['fit-test'].size[2]).toBeCloseTo(36.25, 9);
     for (const f of Object.values(d.fit)) {
       expect(f.fitsBed).toBe(true);
@@ -207,11 +214,12 @@ describe('partsKey', () => {
   it('ignores the printer preset alone and non-geometric fields', () => {
     expect(partsKey(withParams((p) => (p.printer.preset = 'custom')))).toBe(base);
     expect(partsKey(withParams((p) => (p.segments.maxDeviation = 0.2)))).toBe(base);
-    expect(partsKey(withParams((p) => (p.plate.bore = 40)))).toBe(base);
     expect(partsKey(withParams((p) => (p.core.stripBuildUp = 5)))).toBe(base);
   });
   it('changes when a mesh changes', () => {
     expect(partsKey(withParams((p) => (p.cover.slitWidth = 4)))).not.toBe(base);
+    // the plate bore sizes the boss and the clamp
+    expect(partsKey(withParams((p) => (p.plate.bore = 40)))).not.toBe(base);
     expect(partsKey(withParams((p) => (p.core.length = 1200)))).not.toBe(base);
     expect(partsKey(withParams((p) => (p.base.diameter = 230)))).not.toBe(base);
     expect(partsKey(withParams((p) => (p.printer.bedZ = 150)))).not.toBe(base);

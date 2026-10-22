@@ -28,7 +28,7 @@ describe('built-in presets', () => {
     const p = decodeConfig(BUILTIN_PRESETS[1]!.code)!.config.params;
     expect(p.printer).toEqual({ preset: 'bambu-a1-mini', bedX: 180, bedY: 180, bedZ: 180 });
     const fit = deriveDims(p).fit;
-    for (const id of ['base', 'inner-segment', 'outer-segment', 'top-cover'] as const) expect(fit[id].fitsBed && fit[id].fitsZ, id).toBe(true);
+    for (const id of ['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp'] as const) expect(fit[id].fitsBed && fit[id].fitsZ, id).toBe(true);
   });
   it('led-tube-28 uses the LED tube core and a generator', () => {
     const c = decodeConfig(BUILTIN_PRESETS[2]!.code)!.config;

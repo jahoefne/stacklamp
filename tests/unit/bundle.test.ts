@@ -59,11 +59,12 @@ describe('export ZIP', () => {
       'inner-segment.3mf',
       'outer-segment.3mf',
       'top-cover.3mf',
+      'plate-clamp.3mf',
       'PRINT-PLAN.md',
       'ASSEMBLY.md',
       'config.json',
     ]);
-    expect(stages).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover', 'docs', 'zip', 'zip']);
+    expect(stages).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp', 'docs', 'zip', 'zip']);
     for (const name of Object.keys(files).filter((n) => n.endsWith('.3mf'))) {
       expect(Object.keys(unzipSync(files[name]!))).toContain('3D/3dmodel.model');
     }

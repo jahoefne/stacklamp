@@ -53,7 +53,8 @@ export function deriveDims(p: LampParams): DerivedDims {
   const seatZ = p.segments.overlap + c + p.segments.rimLeadIn;
   const ringHeight = seatZ + p.base.footGap;
   const pocketDiameter = p.plate.od + 2 * p.tolerances.plateRadial;
-  const pocketDepth = p.plate.thickness + p.tolerances.plateDepth;
+  const pocketDepth = p.plate.thickness + 3 + p.tolerances.plateDepth;
+  const clampOD = p.plate.bore + 20;
   const collarOD = p.core.diameter + 2 * p.tolerances.core + 2 * p.base.collarWall;
   const wireRouting: 'beside-collar' | 'through-socket' =
     p.base.wireRouting === 'auto'
@@ -107,6 +108,7 @@ export function deriveDims(p: LampParams): DerivedDims {
     'inner-segment': [inner.socketOD, inner.socketOD, inner.height],
     'outer-segment': [outer.socketOD, outer.socketOD, outer.height],
     'top-cover': [coverOD, coverOD, p.cover.plateThickness + p.segments.overlap],
+    'plate-clamp': [clampOD, clampOD, 3],
     'fit-test': [outer.socketOD, outer.socketOD, seatZ + 15],
   };
   const fit = Object.fromEntries(
@@ -127,6 +129,7 @@ export function deriveDims(p: LampParams): DerivedDims {
     'inner-segment': Array.from({ length: inner.count }, (_, k) => translateZ(inner.stackBottomZ + k * inner.pitch)),
     'outer-segment': Array.from({ length: outer.count }, (_, k) => translateZ(outer.stackBottomZ + k * outer.pitch)),
     'top-cover': [flipAtZ(coverTopZ)],
+    'plate-clamp': [translateZ(p.tolerances.plateDepth)],
     'fit-test': [],
   };
   return {
@@ -136,7 +139,7 @@ export function deriveDims(p: LampParams): DerivedDims {
     ringHeight,
     inner,
     outer,
-    base: { height: baseHeight, topZ: zt, printHeight: baseHeight + p.base.collarHeight, collarOD, screwZ: zt + Math.max(20, ringHeight + 6), wireRouting, pocketDiameter, pocketDepth },
+    base: { height: baseHeight, topZ: zt, printHeight: baseHeight + p.base.collarHeight, collarOD, screwZ: zt + Math.max(20, ringHeight + 6), wireRouting, pocketDiameter, pocketDepth, bossDiameter: p.plate.bore - 2 * p.tolerances.plateRadial, clampDiameter: clampOD, clampScrewLength: 25, clampRecess: p.tolerances.plateDepth },
     cover: { od: coverOD, printHeight: p.cover.plateThickness + p.segments.overlap, plateUndersideZ, topZ: coverTopZ, innerTopGap: plateUndersideZ - inner.topZ },
     rod: { diameter: p.core.diameter, bottomZ: rodBottomZ, topZ: rodTopZ, requiredLength: p.core.length, cutOff: 0, endGap: ceiling - rodTopZ, stripZone: [zt + p.base.collarHeight, plateUndersideZ - p.cover.bossHeight] },
     totalHeight: coverTopZ,
@@ -218,6 +221,7 @@ export function buildStubParts(p: LampParams, quality: Quality, withFitTest = fa
     mesh('inner-segment', quality, i.geo, i.vol, d.inner.count, d.fit['inner-segment'].size),
     mesh('outer-segment', quality, o.geo, o.vol, d.outer.count, d.fit['outer-segment'].size),
     mesh('top-cover', quality, tube(d.cover.od / 2, 0, p.cover.plateThickness, n), coverVol, 1, d.fit['top-cover'].size),
+    mesh('plate-clamp', quality, tube(d.base.clampDiameter / 2, p.base.screwDiameter / 2 + 0.6, 3, n), Math.PI * (d.base.clampDiameter / 2) ** 2 * 3, 1, d.fit['plate-clamp'].size),
   ];
   if (withFitTest) {
     const f = ring(p.tubes.outerOD, d.seatZ + 15);

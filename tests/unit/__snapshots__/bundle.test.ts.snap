@@ -9,8 +9,9 @@ Configuration: https://jahoefne.github.io/stacklamp/#v=1
 
 - **Core:** 1500 mm aluminium tube Ø 20 mm, no cut needed.
 - **3 × M4 screws** (8–10 mm set screws or self-tapping screws) for the collar holes (Ø 3.3 mm), or a few dots of hot glue instead.
-- **Weight plate** Ø 155 × 25 mm with a 30 mm bore (a standard cast-iron dumbbell plate); it sits in the base's 158 × 26 mm underside pocket and keeps the lamp from tipping.
-- **LED strip**, 10 mm wide, 12 V or 24 V, wrapped around the rod between 78 mm and 1515.5 mm above the floor (1437.5 mm). Length estimate:
+- **Weight plate** Ø 155 × 25 mm with a 30 mm bore (a standard cast-iron dumbbell plate); it sits in the base's Ø 158 × 29 mm underside pocket, over the Ø 27 mm boss, and keeps the lamp from tipping. Measure your plate: one up to 3 mm thinner than entered still clamps, a thicker one pushes the clamp out of the pocket.
+- **1 × 4 × 25 mm countersunk wood screw** (or self-tapping screw) that pulls the printed plate clamp onto the boss (Ø 3.3 mm pilot hole).
+- **LED strip**, 10 mm wide, 12 V or 24 V, wrapped around the rod between 81 mm and 1518.5 mm above the floor (1437.5 mm). Length estimate:
 
 | Wrap | Strip length |
 |---|---|
@@ -20,13 +21,13 @@ Configuration: https://jahoefne.github.io/stacklamp/#v=1
 | one straight run | ≈ 1.44 m |
 
 - **Power supply:** a certified 12 V or 24 V (SELV) supply matching the strip, rated for the strip power (W/m × length) plus 20 %, with an inline switch or dimmer. The supply stays outside the lamp.
-- **Printed parts:** base, 11 × inner segment, 11 × outer segment, top cover (see PRINT-PLAN.md).
+- **Printed parts:** base, 11 × inner segment, 11 × outer segment, top cover, plate clamp (see PRINT-PLAN.md).
 
 ## Steps
 
-1. Press the weight plate into the pocket on the underside of the base. If it rattles, a few dots of hot glue or a strip of tape hold it.
+1. Turn the base over and push the weight plate into the pocket, its bore over the Ø 27 mm boss, until it meets the pocket ceiling. Hold the plate clamp against the plate, countersink outwards, and drive the 4 × 25 mm screw through it into the boss until the plate is firmly held. The clamp ends 1 mm inside the pocket, so the base stands on its rim; if it stands proud, enter the plate's real thickness and reprint the base.
 2. Push the rod into the collar until it stands on the socket floor, 15 mm below the base top. Tighten the 3 screws (27.75 mm above the base top) evenly so the rod stands upright.
-3. Wrap the LED strip around the rod from the collar top (78 mm) up to 1515.5 mm, where the cover boss begins: the top 12.5 mm of the rod slide into the boss and stay bare. Secure both ends.
+3. Wrap the LED strip around the rod from the collar top (81 mm) up to 1518.5 mm, where the cover boss begins: the top 12.5 mm of the rod slide into the boss and stay bare. Secure both ends.
 4. Route the strip's lead down the Ø 8 mm hole beside the collar into the tunnel and out of the base rim. Connect it to the power supply outside the lamp.
 5. Stack the 11 inner segments onto the inner ring of the base, foot (socket) down, in the colour order of PRINT-PLAN.md (band 1 at the bottom). Each foot slides over the rim below and sits on its 45° shoulder.
 6. Stack the 11 outer segments onto the outer ring the same way.
@@ -36,7 +37,7 @@ Configuration: https://jahoefne.github.io/stacklamp/#v=1
 
 - Use **only SELV LED strips (12 V or 24 V)** with a certified, correctly rated power supply. Never bring mains voltage into the lamp.
 - **PETG softens at about 80 °C.** Keep the air intakes in the base and the slits in the cover open so warm air can rise through the stacks; use moderate strip power (the aluminium rod works as a heat sink) and check after an hour that no part gets hot to the touch.
-- **Anchor the lamp against tipping.** It is 1.53 m tall on a 240 mm base: always use the weight plate, stand it on a level floor and keep it out of reach of small children and pets.
+- **Anchor the lamp against tipping.** It is 1.54 m tall on a 240 mm base: always use the weight plate, stand it on a level floor and keep it out of reach of small children and pets.
 - The printed parts are not a structural load path: do not lift the lamp by the cover or the segments.
 "
 `;
@@ -52,7 +53,7 @@ Reopen this lamp: https://jahoefne.github.io/stacklamp/#v=1
 | Item | Value |
 |---|---|
 | Rod | 1500 mm aluminium tube Ø 20 mm, no cut needed |
-| Lamp height | 1533.5 mm (base 43 mm + stacks + 3 mm cover plate) |
+| Lamp height | 1536.5 mm (base 46 mm + stacks + 3 mm cover plate) |
 | Outer stack | 11 × 154.5 mm segments, Ø 200 mm, pitch 133.25 mm (+3.0 % from the 150 mm target) |
 | Inner stack | 11 × 154.3 mm segments, Ø 60 mm, pitch 133.05 mm (+2.9 % from the 150 mm target) |
 | Height mode | auto (segment heights fitted to the rod) |
@@ -64,21 +65,23 @@ Reopen this lamp: https://jahoefne.github.io/stacklamp/#v=1
 
 | Part | Size (mm) | Fits bed | Fits height |
 |---|---|---|---|
-| Base | 240 × 240 × 78 | yes | yes |
+| Base | 240 × 240 × 81 | yes | yes |
 | Inner segment | 62.1 × 62.1 × 154.3 | yes | yes |
 | Outer segment | 202.1 × 202.1 × 154.5 | yes | yes |
 | Top cover | 205.3 × 205.3 × 23 | yes | yes |
+| Plate clamp | 50 × 50 × 3 | yes | yes |
 
 ## Parts
 
 | File | Part | Copies | Colours | Triangles | Volume each (cm³) | Solid each (g) | Estimate each (g) | Estimate total (g) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| base.3mf | Base | 1 | any (opaque recommended) | 53,950 | 1488.2 | 1890.0 | 733.2 | 733 |
+| base.3mf | Base | 1 | any (opaque recommended) | 61,550 | 1574.7 | 1999.9 | 775.0 | 775 |
 | inner-segment.3mf | Inner segment | 11 | Clear × 6, Amber × 5 | 4,000 | 23.1 | 29.3 | 26.9 | 296 |
 | outer-segment.3mf | Outer segment | 11 | Amber × 4, Teal × 4, Clear × 3 | 12,800 | 77.5 | 98.4 | 90.5 | 995 |
 | top-cover.3mf | Top cover | 1 | any (opaque recommended) | 33,408 | 131.1 | 166.5 | 125.5 | 125 |
+| plate-clamp.3mf | Plate clamp | 1 | any (opaque recommended) | 2,304 | 5.8 | 7.3 | 7.3 | 7 |
 
-Total ≈ 2150 g / 704 m of 1.75 mm PETG (density 1.27 g/cm³). The estimates are what the slicer extrudes with the settings below: vase lines with rounded flanks for the segments, walls + 20 % infill for the base and cover; the base includes ≈ 52 g of tree supports.
+Total ≈ 2199 g / 720 m of 1.75 mm PETG (density 1.27 g/cm³). The estimates are what the slicer extrudes with the settings below: vase lines with rounded flanks for the segments, walls + 20 % infill for the base and cover, the plate clamp solid; the base includes ≈ 58 g of tree supports.
 
 ### Filament per colour
 
@@ -138,12 +141,17 @@ Slicers ignore the colours stored in the 3MF files (they are a viewer hint only)
 
 - Print top-up, as exported, and **keep it centred** on the bed: Bambu Studio's auto-arrange keeps a margin around parts with supports and refuses a 240 mm base on a 256 mm bed.
 - 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers, elephant-foot compensation 0.15 mm.
-- **Tree supports, on build plate only**: the 158 mm plate pocket in the underside has a flat ceiling. The cable tunnel has a 45° teardrop roof and needs no support.
+- **Tree supports, on build plate only**: the 158 mm plate pocket in the underside has a flat ceiling. The Ø 27 mm boss hanging from its middle ends in a 45° tip and needs only a small support under its flat; the cable tunnel has a 45° teardrop roof and needs none.
 
 ### Top cover — normal mode
 
 - Print plate-down, as exported (rings and boss pointing up), no supports. The top edge is a 45° chamfer blending into a round, so nothing overhangs more than 45°.
 - 3 walls, 20 % infill, 0.2 mm layers for a clean top surface, elephant-foot compensation 0.15 mm.
+
+### Plate clamp — normal mode
+
+- Print as exported (flange on the bed, the countersink opening downwards), no supports: the countersink is a 45° cone.
+- 3 walls, **100 % infill** with the aligned rectilinear pattern (Bambu Studio refuses 100 % with grid, cubic or gyroid): a Ø 50 × 3 mm disc whose screw head bears on it. Elephant-foot compensation 0.15 mm.
 
 ## Notes
 
@@ -291,23 +299,23 @@ exports[`export ZIP > documents (snapshot) > config.json 1`] = `
       "D": 60
     },
     "base": {
-      "height": 43,
-      "printHeight": 78,
+      "height": 46,
+      "printHeight": 81,
       "wireRouting": "beside-collar"
     },
     "cover": {
       "od": 205.3,
-      "plateUndersideZ": 1530.5,
+      "plateUndersideZ": 1533.5,
       "innerTopGap": 2.2
     },
     "rod": {
       "requiredLength": 1500,
       "cutOff": 0,
       "endGap": 2.5,
-      "bottomZ": 28,
-      "topZ": 1528
+      "bottomZ": 31,
+      "topZ": 1531
     },
-    "totalHeight": 1533.5
+    "totalHeight": 1536.5
   }
 }
 "

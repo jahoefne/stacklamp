@@ -134,7 +134,7 @@ describe.each(SAMPLES)('sample $name', (sample) => {
 
     // --- entries
     const ext = sample.format;
-    const partNames = ['base', 'inner-segment', 'outer-segment', 'top-cover', ...(sample.includeFitTest ? ['fit-test'] : [])].map(
+    const partNames = ['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp', ...(sample.includeFitTest ? ['fit-test'] : [])].map(
       (p) => `${p}.${ext}`,
     );
     expect(Object.keys(files)).toEqual([...partNames, 'PRINT-PLAN.md', 'ASSEMBLY.md', 'config.json']);
@@ -198,6 +198,7 @@ describe.each(SAMPLES)('sample $name', (sample) => {
     }
     expect(row(`base.${ext}`)[2]).toBe('1');
     expect(row(`top-cover.${ext}`)[2]).toBe('1');
+    expect(row(`plate-clamp.${ext}`)[2]).toBe('1');
     if (sample.includeFitTest) expect(row(`fit-test.${ext}`)[2]).toBe('2');
     const colourRows = tableAfter(md, '### Filament per colour');
     expect(colourRows.reduce((a, r) => a + Number(r[1]), 0)).toBe(dims.inner.count);
@@ -229,7 +230,7 @@ describe.each(SAMPLES)('sample $name', (sample) => {
       expect(asm).toMatch(/SELV/);
     }
     if (sample.name === 'a1-mini') {
-      for (const f of Object.values(dims.fit).slice(0, 4)) expect(f.fitsBed && f.fitsZ).toBe(true);
+      for (const f of Object.values(dims.fit).slice(0, 5)) expect(f.fitsBed && f.fitsZ).toBe(true);
       expect(md).toContain('180 × 180 × 180 mm');
     }
 

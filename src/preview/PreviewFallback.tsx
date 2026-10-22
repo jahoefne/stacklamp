@@ -105,7 +105,7 @@ function Elevation({
   palette: readonly PetgColour[];
   title: string;
 }): ReactElement {
-  const H = dims?.totalHeight ?? 1533.5;
+  const H = dims?.totalHeight ?? 1536.5;
   const baseD = dims?.fit.base?.size[0] ?? 240;
   const W = Math.max(baseD, dims?.cover.od ?? 205) + 40;
   const y = (z: number) => H - z;

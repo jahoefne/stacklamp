@@ -20,7 +20,7 @@ describe('GeometryHandler', () => {
   it('rebuilds only the cover when only cover parameters change', () => {
     const h = createHandler(k);
     h.buildParts(defaultParams(), 'preview');
-    expect(h.stats).toMatchObject({ hits: 0, misses: 4 });
+    expect(h.stats).toMatchObject({ hits: 0, misses: 5 });
     h.buildParts(
       withParams((p) => {
         p.cover.slitWidth = 4;
@@ -28,13 +28,13 @@ describe('GeometryHandler', () => {
       }),
       'preview',
     );
-    expect(h.stats).toMatchObject({ hits: 3, misses: 5 });
+    expect(h.stats).toMatchObject({ hits: 4, misses: 6 });
     // printer preset and colour-irrelevant fields hit everything
     h.buildParts(withParams((p) => (p.printer.preset = 'custom')), 'preview');
-    expect(h.stats).toMatchObject({ hits: 7, misses: 5 });
+    expect(h.stats).toMatchObject({ hits: 9, misses: 6 });
     // quality is part of the key
     h.buildParts(defaultParams(), 'export');
-    expect(h.stats.misses).toBe(9);
+    expect(h.stats.misses).toBe(11);
   });
 
   it('is an LRU of 8 entries', () => {
@@ -57,12 +57,12 @@ describe('GeometryHandler', () => {
       expect(Array.from(b[i]!.positions.subarray(0, 30))).toEqual(Array.from(a[i]!.positions.subarray(0, 30)));
     }
     const ids = a.map((m) => m.id);
-    expect(ids).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover']);
-    expect(a.map((m) => m.copies)).toEqual([1, 11, 11, 1]);
+    expect(ids).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp']);
+    expect(a.map((m) => m.copies)).toEqual([1, 11, 11, 1, 1]);
     expect(a.every((m) => m.quality === 'preview' && m.normals !== undefined)).toBe(true);
     const transfers = meshTransfers(a);
-    expect(transfers).toHaveLength(12);
-    expect(new Set(transfers).size).toBe(12);
+    expect(transfers).toHaveLength(15);
+    expect(new Set(transfers).size).toBe(15);
   });
 
   it('posts parts, progress and errors', () => {
@@ -89,7 +89,7 @@ describe('GeometryHandler', () => {
       post,
     );
     const types = posted.map((p) => p.res.type);
-    expect(types.filter((t) => t === 'progress')).toHaveLength(8);
+    expect(types.filter((t) => t === 'progress')).toHaveLength(9);
     expect(types.at(-1)).toBe('zip');
     const zip = posted.at(-1)!;
     expect(zip.res).toMatchObject({ id: 2, fileName: 'stacklamp-L1500-D200-rod-o11x154.5-i11x154.3.zip' });

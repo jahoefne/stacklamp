@@ -4,8 +4,8 @@ exports[`golden values at the defaults > snapshot 1`] = `
 {
   "A_o": 1465.75,
   "base": {
-    "height": 43,
-    "printHeight": 78,
+    "height": 46,
+    "printHeight": 81,
     "screwAboveTop": 27.75,
     "wire": "beside-collar",
   },
@@ -27,18 +27,18 @@ exports[`golden values at the defaults > snapshot 1`] = `
     "height": 154.5,
     "pitch": 133.25,
   },
-  "plateUndersideZ": 1530.5,
+  "plateUndersideZ": 1533.5,
   "ringHeight": 21.75,
   "rod": {
-    "bottomZ": 28,
+    "bottomZ": 31,
     "endGap": 2.5,
-    "topZ": 1528,
+    "topZ": 1531,
   },
   "seatZ": 21.25,
   "socketODs": [
     202.1,
     62.1,
   ],
-  "totalHeight": 1533.5,
+  "totalHeight": 1536.5,
 }
 `;

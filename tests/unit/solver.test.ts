@@ -21,8 +21,8 @@ describe('golden values at the defaults', () => {
     expect(d.ok).toBe(true);
     close(d.seatZ, 21.25);
     close(d.ringHeight, 21.75);
-    close(d.base.height, 43);
-    close(d.base.printHeight, 78);
+    close(d.base.height, 46);
+    close(d.base.printHeight, 81);
     close(d.base.screwZ - d.base.topZ, 27.75);
     close(s.A_o, 1465.75);
     expect(d.outer.count).toBe(11);
@@ -31,13 +31,13 @@ describe('golden values at the defaults', () => {
     close(d.outer.deviation, 0.03, 1e-9);
     expect(d.inner.count).toBe(11);
     close(d.inner.height, 154.3);
-    close(d.cover.plateUndersideZ, 1530.5);
-    close(d.rod.bottomZ, 28);
-    close(d.rod.topZ, 1528);
+    close(d.cover.plateUndersideZ, 1533.5);
+    close(d.rod.bottomZ, 31);
+    close(d.rod.topZ, 1531);
     close(d.rod.endGap, 2.5);
     close(d.rod.requiredLength, 1500);
     close(d.rod.cutOff, 0);
-    close(d.totalHeight, 1533.5);
+    close(d.totalHeight, 1536.5);
     close(d.cover.od, 205.3);
     close(d.outer.socketOD, 202.1);
     close(d.inner.socketOD, 62.1);
@@ -63,7 +63,7 @@ describe('golden values at the defaults', () => {
     }).toMatchSnapshot();
   });
 
-  it('LED-tube preset: wire through the socket, base 55', () => {
+  it('LED-tube preset: wire through the socket, base 58', () => {
     const t = withParams((q) => {
       q.core.kind = 'led-tube';
       q.core.diameter = 28;
@@ -71,7 +71,7 @@ describe('golden values at the defaults', () => {
     const dt = deriveDims(t);
     expect(dt.ok).toBe(true);
     expect(dt.base.wireRouting).toBe('through-socket');
-    close(dt.base.height, 55);
+    close(dt.base.height, 58);
     expect(dt.messages.map((m) => m.code)).toContain('wire-routing-through-socket');
     close(dt.rod.requiredLength, 1500);
   });

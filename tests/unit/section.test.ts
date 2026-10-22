@@ -1,7 +1,8 @@
 /**
  * Assembly interference in the (r, z) half plane: no two placed profiles
- * (base, every segment, cover, rod) overlap, and the parts that are meant to
- * bear on each other actually touch (shift one by 0.01 mm and they overlap).
+ * (base, every segment, cover, clamp, weight plate, rod) overlap, and the
+ * parts that are meant to bear on each other actually touch (shift one by
+ * 0.01 mm and they overlap).
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 import { deriveDims } from '../../src/geometry/derive';
@@ -72,5 +73,10 @@ describe.each(CASES.filter((c) => !c.expectErrors?.length))('$name', ({ params }
     const rod = piece(pieces, 'rod');
     expect(overlapArea(k, down(rod), piece(pieces, 'base').polygon)).toBeGreaterThan(CONTACT);
     expect(overlapArea(k, up(rod), cover)).toBeLessThan(NONE);
+    // the weight plate meets the pocket ceiling, clears the boss, and the clamp bears on it from below
+    const plate = piece(pieces, 'plate');
+    expect(overlapArea(k, up(plate), piece(pieces, 'base').polygon)).toBeGreaterThan(CONTACT);
+    expect(overlapArea(k, up(piece(pieces, 'plate-clamp')), plate.polygon)).toBeGreaterThan(CONTACT);
+    expect(overlapArea(k, down(piece(pieces, 'plate-clamp')), piece(pieces, 'base').polygon)).toBeLessThan(NONE);
   });
 });

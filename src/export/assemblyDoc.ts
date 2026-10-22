@@ -2,6 +2,7 @@
  * ASSEMBLY.md: hardware list, assembly steps and safety notes for the
  * configured lamp. Deterministic.
  */
+import { BOSS_CLEARANCE } from '../geometry/layout';
 import type { DerivedDims } from '../geometry/types';
 import { num, table } from './format';
 import type { DocInput } from './printPlan';
@@ -45,7 +46,8 @@ export function assemblyMarkdown(input: DocInput): string {
     hw.push('- **Hot glue** (or epoxy) to fix the rod in the collar.');
   }
   hw.push(
-    `- **Weight plate** Ø ${num(p.plate.od)} × ${num(p.plate.thickness)} mm with a ${num(p.plate.bore)} mm bore (a standard cast-iron dumbbell plate); it sits in the base's ${num(dims.base.pocketDiameter)} × ${num(dims.base.pocketDepth)} mm underside pocket and keeps the lamp from tipping.`,
+    `- **Weight plate** Ø ${num(p.plate.od)} × ${num(p.plate.thickness)} mm with a ${num(p.plate.bore)} mm bore (a standard cast-iron dumbbell plate); it sits in the base's Ø ${num(dims.base.pocketDiameter)} × ${num(dims.base.pocketDepth)} mm underside pocket, over the Ø ${num(dims.base.bossDiameter)} mm boss, and keeps the lamp from tipping. Measure your plate: one up to ${num(BOSS_CLEARANCE)} mm thinner than entered still clamps, a thicker one pushes the clamp out of the pocket.`,
+    `- **1 × 4 × ${num(dims.base.clampScrewLength)} mm countersunk wood screw** (or self-tapping screw) that pulls the printed plate clamp onto the boss (Ø ${num(p.base.screwDiameter)} mm pilot hole).`,
   );
   if (!tube) {
     hw.push(
@@ -71,7 +73,7 @@ export function assemblyMarkdown(input: DocInput): string {
     hw.push('- **Mains lead** for the LED tube with an inline switch, wired by a qualified person.');
   }
   hw.push(
-    `- **Printed parts:** base, ${dims.inner.count} × inner segment, ${dims.outer.count} × outer segment, top cover (see PRINT-PLAN.md).`,
+    `- **Printed parts:** base, ${dims.inner.count} × inner segment, ${dims.outer.count} × outer segment, top cover, plate clamp (see PRINT-PLAN.md).`,
   );
   out.push(hw.join('\n'), '');
 
@@ -81,7 +83,7 @@ export function assemblyMarkdown(input: DocInput): string {
       ? `down the Ø ${num(p.base.wireDiameter)} mm hole beside the collar into the tunnel and out of the base rim`
       : `through the Ø ${num(p.base.wireDiameter)} mm hole in the socket floor into the tunnel and out of the base rim`;
   const steps: string[] = [
-    `Press the weight plate into the pocket on the underside of the base. If it rattles, a few dots of hot glue or a strip of tape hold it.`,
+    `Turn the base over and push the weight plate into the pocket, its bore over the Ø ${num(dims.base.bossDiameter)} mm boss, until it meets the pocket ceiling. Hold the plate clamp against the plate, countersink outwards, and drive the 4 × ${num(dims.base.clampScrewLength)} mm screw through it into the boss until the plate is firmly held. The clamp ends ${num(dims.base.clampRecess)} mm inside the pocket, so the base stands on its rim; if it stands proud, enter the plate's real thickness and reprint the base.`,
     `Push the ${tube ? 'LED tube' : 'rod'} into the collar until it stands on the socket floor, ${num(p.base.socketBelowTop)} mm below the base top. ${
       tube
         ? `Fix it with hot glue${p.base.screwCount > 0 ? ' (or the soft-tipped screws, hand-tight)' : ''} and hold it upright until the glue sets.`

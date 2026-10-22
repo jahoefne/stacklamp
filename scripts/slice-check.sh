@@ -16,7 +16,8 @@
 #           0.8 mm line, like vase mode.)
 #           base: 4 walls, 20 % gyroid, 5/5 shells, tree supports on build plate only, no brim,
 #           elephant-foot 0.15. top-cover: 3 walls, 20 % infill, 0.2 mm layers, no supports, no
-#           brim, elephant-foot 0.15.
+#           brim, elephant-foot 0.15. plate-clamp: 3 walls, 100 % aligned-rectilinear infill, no
+#           supports, no brim, elephant-foot 0.15.
 # Machine: Bambu Lab A1 mini 0.6 nozzle when config.json says printer.preset = bambu-a1-mini,
 # otherwise Bambu Lab X1 Carbon 0.6 nozzle, with the matching "0.30mm Standard … 0.6 nozzle"
 # process, Generic PETG and the Textured PEI plate. The bundled system profiles use `inherits`
@@ -315,6 +316,10 @@ process_profile() {
     top-cover:normal)
       flatten process "$base" "$out" "$BED" brim_type=no_brim brim_width=0 wall_loops=3 \
         sparse_infill_density=20% layer_height=0.2 enable_support=0 elefant_foot_compensation=0.15 ;;
+    plate-clamp:normal)
+      # 100 % infill is only accepted with the aligned rectilinear pattern (grid, cubic, gyroid are rejected)
+      flatten process "$base" "$out" "$BED" brim_type=no_brim brim_width=0 wall_loops=3 \
+        sparse_infill_density=100% sparse_infill_pattern=alignedrectilinear enable_support=0 elefant_foot_compensation=0.15 ;;
     *)
       flatten process "$base" "$out" "$BED" ;;
   esac

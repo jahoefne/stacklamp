@@ -1,6 +1,7 @@
 /**
  * The assembled lamp as (r, z) profiles in world coordinates: base, every
- * segment, the cover (flipped) and the rod. Revolved parts interfere in 3D
+ * segment, the cover (flipped), the plate clamp, the weight plate (not
+ * printed, but it must fit) and the rod. Revolved parts interfere in 3D
  * exactly when their profiles overlap in this half plane, so the
  * interference tests intersect these polygons (CrossSection) instead of
  * building and intersecting solids.
@@ -10,6 +11,7 @@ import type { Kernel } from './kernel';
 import { scoped } from './kernel';
 import { flipProfile, translateProfile, type Profile } from './profile';
 import { baseProfile } from './profiles/base';
+import { clampProfile } from './profiles/clamp';
 import { coverProfile } from './profiles/cover';
 import { segmentProfile } from './profiles/segment';
 import type { LampParams, PartId } from './types';
@@ -17,7 +19,7 @@ import type { LampParams, PartId } from './types';
 export interface SectionPiece {
   /** e.g. `outer-segment#3` */
   name: string;
-  part: PartId | 'rod';
+  part: PartId | 'rod' | 'plate';
   /** Index within the stack (0 = bottom); 0 for single parts. */
   index: number;
   polygon: Profile;
@@ -42,6 +44,25 @@ export function assemblySection(p: LampParams, arcSegments = 8): SectionPiece[] 
     part: 'top-cover',
     index: 0,
     polygon: flipProfile(coverProfile(specs.cover, arcSegments), dims.cover.topZ),
+  });
+  out.push({
+    name: 'plate-clamp',
+    part: 'plate-clamp',
+    index: 0,
+    polygon: translateProfile(clampProfile(specs.clamp), layout.base.clampBottomZ),
+  });
+  const plateTop = layout.base.pocketDepth;
+  const plateBottom = plateTop - p.plate.thickness;
+  out.push({
+    name: 'plate',
+    part: 'plate',
+    index: 0,
+    polygon: [
+      [p.plate.bore / 2, plateBottom],
+      [p.plate.od / 2, plateBottom],
+      [p.plate.od / 2, plateTop],
+      [p.plate.bore / 2, plateTop],
+    ],
   });
   const r = dims.rod.diameter / 2;
   out.push({

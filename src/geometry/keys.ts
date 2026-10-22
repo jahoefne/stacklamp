@@ -33,6 +33,8 @@ export function specFor(specs: PartSpecs, id: PartId): PartSpecs[keyof PartSpecs
       return specs.outer;
     case 'top-cover':
       return specs.cover;
+    case 'plate-clamp':
+      return specs.clamp;
     case 'fit-test':
       return specs.fitTest;
   }

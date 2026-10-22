@@ -84,6 +84,7 @@ export const PART_LABELS: Record<PartId, string> = {
   'inner-segment': 'Inner segment',
   'outer-segment': 'Outer segment',
   'top-cover': 'Top cover',
+  'plate-clamp': 'Plate clamp',
   'fit-test': 'Fit-test ring',
 };
 

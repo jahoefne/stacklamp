@@ -39,7 +39,7 @@ export function Hero({ onConfigure }: HeroProps): ReactElement {
             Configure your lamp
           </Button>
         </div>
-        <p className={styles.meta}>1.5 m tall by default · 4 printable parts · open source (MIT)</p>
+        <p className={styles.meta}>1.5 m tall by default · 5 printable parts · open source (MIT)</p>
       </div>
       <div className={styles.art}>
         <StackIllustration variant="hero" outerColours={outer} innerColours={inner} title={title} animate className={styles.svg ?? ''} />

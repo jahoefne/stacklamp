@@ -28,10 +28,13 @@ export function BaseSection(): ReactElement {
       <ParamNumberField path="base.diameter" hint={`The base is ${fmt(d.base.height, 1)} mm tall and prints ${fmt(d.base.printHeight, 1)} mm high.`} />
       <div className={panel.group}>
         <h3 className={panel.groupTitle}>Weight plate</h3>
-        <p className={panel.hint}>A round steel or cast-iron plate sits in a pocket under the base and keeps the lamp upright.</p>
+        <p className={panel.hint}>
+          A round steel or cast-iron plate sits in a pocket under the base and keeps the lamp upright. A boss through its bore and the
+          printed plate clamp with one wood screw hold it in.
+        </p>
         <ParamNumberField path="plate.od" />
-        <ParamNumberField path="plate.thickness" />
-        <ParamNumberField path="plate.bore" hint="Hole in the middle of the plate." />
+        <ParamNumberField path="plate.thickness" hint="Measure it: a plate up to 3 mm thinner still clamps, a thicker one pushes the clamp out." />
+        <ParamNumberField path="plate.bore" hint="Hole in the middle of the plate. The base's boss passes through it." />
       </div>
       <div className={panel.group}>
         <h3 className={panel.groupTitle}>Printer</h3>

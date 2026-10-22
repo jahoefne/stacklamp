@@ -19,6 +19,7 @@ import { PARAM_META } from './params';
 import { flipAt, identity, translateZ } from './placements';
 import { profileProblem } from './profile';
 import { baseProfile } from './profiles/base';
+import { clampProfile } from './profiles/clamp';
 import { coverProfile } from './profiles/cover';
 import { segmentProfile } from './profiles/segment';
 import { BED_Z_MARGIN, INNER_GAP_RANGE, ROD_GAP_SLACK, type StackSolution } from './solver';
@@ -337,6 +338,7 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
     ['inner-segment', () => segmentProfile(specs.inner)],
     ['outer-segment', () => segmentProfile(specs.outer)],
     ['top-cover', () => coverProfile(cs, 3)],
+    ['plate-clamp', () => clampProfile(specs.clamp)],
     ['fit-test', () => segmentProfile(specs.fitTest)],
   ];
   for (const [id, make] of profiles) {
@@ -388,11 +390,13 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
   const rodTopZ = rodBottomZ + solved.requiredLength;
   const ceiling = plateUndersideZ - p.cover.bossHeight + p.cover.bossHoleDepth;
   const coverOD = 2 * cs.radius;
+  const clampOD = 2 * specs.clamp.radius;
   const sizes: Record<PartId, [number, number, number]> = {
     base: [2 * R, 2 * R, zt + p.base.collarHeight],
     'inner-segment': [inner.socketOD, inner.socketOD, inner.height],
     'outer-segment': [outer.socketOD, outer.socketOD, outer.height],
     'top-cover': [coverOD, coverOD, coverPrintHeight(cs)],
+    'plate-clamp': [clampOD, clampOD, specs.clamp.thickness],
     'fit-test': [outer.socketOD, outer.socketOD, seatZ + FIT_TEST_EXTRA],
   };
   const bedXY = Math.min(p.printer.bedX, p.printer.bedY) - 2 * BED_MARGIN;
@@ -402,6 +406,7 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
     'inner-segment': ['tubes.innerOD', 'segments.innerHeight'],
     'outer-segment': ['tubes.outerOD', 'segments.outerHeight'],
     'top-cover': ['tubes.outerOD', 'segments.overlap'],
+    'plate-clamp': ['plate.bore', 'plate.thickness'],
     'fit-test': ['tubes.outerOD', 'segments.overlap'],
   };
   const fit = {} as DerivedDims['fit'];
@@ -436,6 +441,7 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
     'inner-segment': Array.from({ length: inner.count }, (_, k) => translateZ(stackBottomZ + k * inner.pitch)),
     'outer-segment': Array.from({ length: outer.count }, (_, k) => translateZ(stackBottomZ + k * outer.pitch)),
     'top-cover': [flipAt(coverTopZ)],
+    'plate-clamp': [translateZ(bl.clampBottomZ)],
     'fit-test': [],
   };
 
@@ -456,6 +462,10 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
       wireRouting: bl.routing,
       pocketDiameter: 2 * bl.pocketR,
       pocketDepth: bl.pocketDepth,
+      bossDiameter: 2 * bl.bossR,
+      clampDiameter: clampOD,
+      clampScrewLength: bl.clampScrewLength,
+      clampRecess: bl.clampBottomZ,
     },
     cover: {
       od: coverOD,
@@ -517,6 +527,10 @@ function failedDims(p: LampParams, error: Message): DerivedDims {
       wireRouting: 'beside-collar',
       pocketDiameter: 0,
       pocketDepth: 0,
+      bossDiameter: 0,
+      clampDiameter: 0,
+      clampScrewLength: 0,
+      clampRecess: 0,
     },
     cover: { od: 0, printHeight: 0, plateUndersideZ: 0, topZ: 0, innerTopGap: 0 },
     rod: {
@@ -529,7 +543,7 @@ function failedDims(p: LampParams, error: Message): DerivedDims {
       stripZone: [0, 0],
     },
     totalHeight: 0,
-    placements: { base: [], 'inner-segment': [], 'outer-segment': [], 'top-cover': [], 'fit-test': [] },
+    placements: { base: [], 'inner-segment': [], 'outer-segment': [], 'top-cover': [], 'plate-clamp': [], 'fit-test': [] },
     fit,
   };
 }

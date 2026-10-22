@@ -56,5 +56,6 @@ export function fixtureParts(d: DerivedDims = defaultDims()): PartMesh[] {
     { ...tubeMesh('inner-segment', d.inner.D / 2, d.inner.D / 2 - 0.8, d.inner.height), copies: d.inner.count },
     { ...tubeMesh('outer-segment', d.outer.D / 2, d.outer.D / 2 - 0.8, d.outer.height), copies: d.outer.count },
     tubeMesh('top-cover', d.cover.od / 2, 12, 3),
+    tubeMesh('plate-clamp', d.base.clampDiameter / 2, 2.25, 3),
   ];
 }

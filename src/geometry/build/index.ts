@@ -5,15 +5,17 @@
  */
 import { scoped, type Kernel, type Manifold, type Scope } from '../kernel';
 import { FIT_TEST_COPIES, type PartSpecs } from '../layout';
-import { printedBase, printedCover, printedSegment } from '../estimate';
+import { printedBase, printedClamp, printedCover, printedSegment } from '../estimate';
 import { toPartMesh } from '../mesh';
 import { resolution, type Resolution } from '../quality';
 import type { PartId, PartMesh, Quality } from '../types';
 import { buildBase } from './base';
+import { buildClamp } from './clamp';
 import { buildCover } from './cover';
 import { buildSegment } from './segment';
 
 export { buildBase, baseCutters } from './base';
+export { buildClamp } from './clamp';
 export { buildCover, slitPolygons } from './cover';
 export { buildSegment, segmentRMax } from './segment';
 
@@ -32,6 +34,8 @@ export function buildInScope(s: Scope, id: PartId, specs: PartSpecs, res: Resolu
       return buildSegment(s, specs.outer, res);
     case 'top-cover':
       return buildCover(s, specs.cover, res);
+    case 'plate-clamp':
+      return buildClamp(s, specs.clamp, res);
     case 'fit-test':
       return buildSegment(s, specs.fitTest, res);
   }
@@ -49,6 +53,8 @@ function printedVolume(s: Scope, id: PartId, specs: PartSpecs, res: Resolution):
       return (v) => printedBase(s, v, specs.base, res.arcPerQuarter);
     case 'top-cover':
       return (v) => printedCover(s, v, specs.cover, Math.max(2, Math.round(res.arcPerQuarter / 2)), res.cutter);
+    case 'plate-clamp':
+      return (v) => printedClamp(v);
     case 'inner-segment':
       return (v) => printedSegment(v, specs.inner);
     case 'outer-segment':

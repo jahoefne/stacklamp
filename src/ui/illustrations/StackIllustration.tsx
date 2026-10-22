@@ -40,7 +40,7 @@ export interface StackIllustrationProps {
 
 /** Default lamp (matches the engine's golden values at default params). */
 export const DEFAULT_STACK_DIMS: StackDims = {
-  totalHeight: 1533.5,
+  totalHeight: 1536.5,
   outerOD: 200,
   innerOD: 60,
   baseD: 240,

@@ -62,7 +62,7 @@ describe('GeometrySet', () => {
     const gs = new GeometrySet();
     const parts = [...fixtureParts(), tubeMesh('fit-test', 100, 99.2, 36)];
     const { geometries } = gs.swap(parts);
-    expect([...geometries.keys()].sort()).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover']);
+    expect([...geometries.keys()].sort()).toEqual(['base', 'inner-segment', 'outer-segment', 'plate-clamp', 'top-cover']);
   });
 
   it('disposes the previous geometries only after the swap', () => {
@@ -74,7 +74,7 @@ describe('GeometrySet', () => {
     expect(seen.size).toBe(0);
     expect(geometries.get('outer-segment')).not.toBe(old);
     disposeOld();
-    expect([...seen].sort()).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover']);
+    expect([...seen].sort()).toEqual(['base', 'inner-segment', 'outer-segment', 'plate-clamp', 'top-cover']);
   });
 
   it('reuses the geometry of an identical PartMesh object', () => {
@@ -95,7 +95,7 @@ describe('GeometrySet', () => {
     gs.swap(fixtureParts());
     const seen = disposed(gs);
     gs.dispose();
-    expect(seen.size).toBe(4);
+    expect(seen.size).toBe(5);
     expect(gs.ids()).toEqual([]);
   });
 });

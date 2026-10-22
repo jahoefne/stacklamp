@@ -161,7 +161,7 @@ export const PARAM_META: readonly ParamMeta[] = [
   mm('tolerances.segment', 'Joint clearance', 0.05, 1, 0.05, 'tolerances', true, 'Radial clearance between a segment foot and the segment below.'),
   mm('tolerances.core', 'Rod socket clearance', 0, 1, 0.05, 'tolerances', true),
   mm('tolerances.plateRadial', 'Plate pocket clearance', 0, 5, 0.1, 'tolerances', true),
-  mm('tolerances.plateDepth', 'Plate pocket extra depth', 0, 5, 0.1, 'tolerances', true),
+  mm('tolerances.plateDepth', 'Plate pocket extra depth', 0, 5, 0.1, 'tolerances', true, 'Beyond plate and clamp: how far the clamp sits above the floor.'),
 ];
 
 export const PARAM_META_BY_PATH: ReadonlyMap<NumericParamPath, ParamMeta> = new Map(

@@ -139,10 +139,10 @@ export interface PrinterPreset {
   bed: [number, number, number];
 }
 
-export type PartId = 'base' | 'inner-segment' | 'outer-segment' | 'top-cover' | 'fit-test';
-export const PART_IDS: readonly PartId[] = ['base', 'inner-segment', 'outer-segment', 'top-cover', 'fit-test'];
+export type PartId = 'base' | 'inner-segment' | 'outer-segment' | 'top-cover' | 'plate-clamp' | 'fit-test';
+export const PART_IDS: readonly PartId[] = ['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp', 'fit-test'];
 /** Parts that appear in the assembled lamp (fit-test is print-only). */
-export const ASSEMBLY_PART_IDS: readonly PartId[] = ['base', 'inner-segment', 'outer-segment', 'top-cover'];
+export const ASSEMBLY_PART_IDS: readonly PartId[] = ['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp'];
 
 export type Quality = 'preview' | 'export';
 
@@ -192,7 +192,15 @@ export interface DerivedDims {
     screwZ: number;
     wireRouting: 'beside-collar' | 'through-socket';
     pocketDiameter: number;
+    /** Plate thickness + the clamp flange + the extra depth. */
     pocketDepth: number;
+    /** The boss hanging from the pocket ceiling through the plate's bore. */
+    bossDiameter: number;
+    /** The printed plate clamp under the plate and the screw that pulls it onto the boss. */
+    clampDiameter: number;
+    clampScrewLength: number;
+    /** How far the clamp's underside sits above the floor at the entered plate thickness. */
+    clampRecess: number;
   };
   cover: {
     od: number;

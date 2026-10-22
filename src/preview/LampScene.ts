@@ -109,7 +109,7 @@ export class LampScene {
   private readonly geometries = new GeometrySet();
   private readonly bandMaterials: BandMaterials;
   private readonly partMaterial: MeshStandardMaterial;
-  private copies: Record<LampPartId, CopyObjects[]> = { base: [], 'inner-segment': [], 'outer-segment': [], 'top-cover': [] };
+  private copies: Record<LampPartId, CopyObjects[]> = { base: [], 'inner-segment': [], 'outer-segment': [], 'top-cover': [], 'plate-clamp': [] };
 
   private parts: readonly PartMesh[] | null = null;
   private dims: DerivedDims | null = null;

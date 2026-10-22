@@ -7,7 +7,9 @@
  * Frames: the base is printed top-up, so its print frame is the world frame
  * (base top at z_t = height). Segments and the fit test stand on their foot
  * (z = 0). The cover is printed plate-down: plate on the bed at z = 0..pt,
- * rings and boss pointing up (flipped into the world by its placement).
+ * rings and boss pointing up (flipped into the world by its placement). The
+ * plate clamp prints flange-down (countersink on the bed) and is lifted into
+ * the pocket by its placement.
  */
 import { solveStacks, type SolvedStacks } from './solver';
 import type { LampParams } from './types';
@@ -22,6 +24,26 @@ export const BASE_BOTTOM_CHAMFER = 0.8;
 export const POCKET_MOUTH_CHAMFER = 0.8;
 /** Material between the pocket ceiling and the socket floor / wire tunnel. */
 export const POCKET_CEILING_MIN = 2;
+/** Thickness of the plate clamp's flange; the pocket is this much deeper than the plate. */
+export const CLAMP_THICKNESS = 3;
+/** The clamp flange reaches this far beyond the plate bore on each side. */
+export const CLAMP_FLANGE_MARGIN = 10;
+/** 45° chamfer on the clamp's bottom outer edge (elephant foot). */
+export const CLAMP_BOTTOM_CHAMFER = 0.8;
+/** Radial clearance of the clamp's screw hole around the pilot radius (hole Ø = pilot Ø + 1.2). */
+export const CLAMP_HOLE_CLEARANCE = 0.6;
+/** Extra radius of the 45° countersink in the clamp's underside, for the screw head. */
+export const CLAMP_COUNTERSINK = 2;
+/** The boss tip stops this far above the plate's underside, so plates up to this much thinner still clamp. */
+export const BOSS_CLEARANCE = 3;
+/** Flat ring around the pilot hole at the boss tip, inside its 45° chamfer. */
+export const BOSS_TIP_FLAT = 2.5;
+/** Material between the end of the pilot hole and the pocket ceiling plane. */
+export const PILOT_ROOF = 2;
+/** The screw tip stays at least this far from the end of the pilot hole. */
+export const SCREW_TIP_MARGIN = 1;
+/** Common lengths of countersunk wood / self-tapping screws, mm. */
+export const SCREW_LENGTHS: readonly number[] = [10, 12, 16, 20, 25, 30, 35, 40, 45, 50, 60];
 /** Material above the wire tunnel's teardrop tip to the base top (groove bottoms are 2 lower). */
 export const TUNNEL_TOP_MARGIN = 4;
 /** Material between the tunnel tip and the socket floor when the wire runs through the socket. */
@@ -105,6 +127,8 @@ export interface BaseSpec {
   rings: [RingSpec, RingSpec];
   collar: { radius: number; height: number; topChamfer: number };
   bore: { radius: number; floorZ: number; entryChamfer: number };
+  /** The boss hanging from the pocket ceiling through the plate's bore, with the clamp screw's pilot hole. */
+  boss: { radius: number; tipZ: number; tipRadius: number; pilotRadius: number; pilotTopZ: number };
   intakes: { count: number; width: number; height: number; grooveDepth: number; bands: IntakeBand[]; azimuths: number[] };
   screws: { count: number; radius: number; z: number; r0: number; r1: number; azimuths: number[] };
   wire: {
@@ -140,11 +164,24 @@ export interface CoverSpec {
   slits: { width: number; outer: SlitSet; inner: SlitSet };
 }
 
+export interface ClampSpec {
+  kind: 'clamp';
+  /** Flange radius. */
+  radius: number;
+  thickness: number;
+  /** Screw clearance hole radius. */
+  holeR: number;
+  /** Extra radius of the 45° countersink at the underside (the print bed). */
+  countersink: number;
+  bottomChamfer: number;
+}
+
 export interface PartSpecs {
   base: BaseSpec;
   inner: SegmentSpec;
   outer: SegmentSpec;
   cover: CoverSpec;
+  clamp: ClampSpec;
   fitTest: SegmentSpec;
 }
 
@@ -160,6 +197,15 @@ export interface BaseLayout {
   boreR: number;
   pocketR: number;
   pocketDepth: number;
+  /** Boss through the plate bore: radius, tip height and the pilot hole. */
+  bossR: number;
+  bossTipZ: number;
+  bossTipR: number;
+  pilotR: number;
+  pilotTopZ: number;
+  /** Underside of the clamp at the entered plate thickness (= its recess above the floor). */
+  clampBottomZ: number;
+  clampScrewLength: number;
   tunnelZ: number;
   tunnelTop: number;
   screwZAboveTop: number;
@@ -215,13 +261,27 @@ export function segmentSpec(p: LampParams, D: number, height: number): SegmentSp
 
 export const socketOD = (s: SegmentSpec): number => s.D + 2 * s.clearance + 2 * s.wall;
 
+/** Longest common screw length not above `max` (the shortest one when even that is too long). */
+export function screwLength(max: number): number {
+  let best = SCREW_LENGTHS[0]!;
+  for (const L of SCREW_LENGTHS) if (L <= max + 1e-9) best = L;
+  return best;
+}
+
 // ---------------------------------------------------------------- base
 
 export function layoutBase(p: LampParams, ringHeight: number): BaseLayout {
   const collarR = p.core.diameter / 2 + p.tolerances.core + p.base.collarWall;
   const boreR = p.core.diameter / 2 + p.tolerances.core;
   const pocketR = p.plate.od / 2 + p.tolerances.plateRadial;
-  const pocketDepth = p.plate.thickness + p.tolerances.plateDepth;
+  const pocketDepth = p.plate.thickness + CLAMP_THICKNESS + p.tolerances.plateDepth;
+  const pilotR = p.base.screwDiameter / 2;
+  const bossR = p.plate.bore / 2 - p.tolerances.plateRadial;
+  const bossTipZ = pocketDepth - p.plate.thickness + BOSS_CLEARANCE;
+  const bossTipR = Math.min(pilotR + BOSS_TIP_FLAT, bossR);
+  const pilotTopZ = pocketDepth - PILOT_ROOF;
+  const clampBottomZ = pocketDepth - p.plate.thickness - CLAMP_THICKNESS;
+  const clampScrewLength = screwLength(pilotTopZ - SCREW_TIP_MARGIN - clampBottomZ);
   const rw = p.base.wireDiameter / 2;
   const innerRingInnerR = p.tubes.innerOD / 2 - p.base.ringWall;
   const room = (innerRingInnerR - collarR - 2 * rw) / 2;
@@ -248,6 +308,13 @@ export function layoutBase(p: LampParams, ringHeight: number): BaseLayout {
     boreR,
     pocketR,
     pocketDepth,
+    bossR,
+    bossTipZ,
+    bossTipR,
+    pilotR,
+    pilotTopZ,
+    clampBottomZ,
+    clampScrewLength,
     tunnelZ,
     tunnelTop,
     screwZAboveTop: Math.max(SCREW_MIN_Z, ringHeight + SCREW_ABOVE_RING),
@@ -283,6 +350,7 @@ function baseSpec(p: LampParams, b: BaseLayout, ringHeight: number, inner: Segme
     rings,
     collar: { radius: b.collarR, height: p.base.collarHeight, topChamfer: COLLAR_TOP_CHAMFER },
     bore: { radius: b.boreR, floorZ, entryChamfer: SOCKET_ENTRY_CHAMFER },
+    boss: { radius: b.bossR, tipZ: b.bossTipZ, tipRadius: b.bossTipR, pilotRadius: b.pilotR, pilotTopZ: b.pilotTopZ },
     intakes: {
       count: intakeCount,
       width: p.base.intakeWidth,
@@ -314,6 +382,19 @@ function baseSpec(p: LampParams, b: BaseLayout, ringHeight: number, inner: Segme
       tunnelStart: holeR - rw / 2,
       tunnelEnd: p.base.diameter / 2 + TUNNEL_RIM_OVERSHOOT,
     },
+  };
+}
+
+// ---------------------------------------------------------------- plate clamp
+
+function clampSpec(p: LampParams, b: BaseLayout): ClampSpec {
+  return {
+    kind: 'clamp',
+    radius: p.plate.bore / 2 + CLAMP_FLANGE_MARGIN,
+    thickness: CLAMP_THICKNESS,
+    holeR: b.pilotR + CLAMP_HOLE_CLEARANCE,
+    countersink: CLAMP_COUNTERSINK,
+    bottomChamfer: CLAMP_BOTTOM_CHAMFER,
   };
 }
 
@@ -380,6 +461,7 @@ export function computeLayout(p: LampParams): Layout {
       inner,
       outer,
       cover: coverSpec(p),
+      clamp: clampSpec(p, base),
       fitTest: segmentSpec(p, p.tubes.outerOD, solved.seatZ + FIT_TEST_EXTRA),
     },
   };

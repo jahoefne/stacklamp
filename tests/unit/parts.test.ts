@@ -12,6 +12,7 @@ import { dispose, type Kernel, type Manifold } from '../../src/geometry/kernel';
 import type { PartSpecs } from '../../src/geometry/layout';
 import { revolvedPolygonVolume, type Profile } from '../../src/geometry/profile';
 import { baseProfile } from '../../src/geometry/profiles/base';
+import { clampProfile } from '../../src/geometry/profiles/clamp';
 import { coverProfile } from '../../src/geometry/profiles/cover';
 import { segmentProfile } from '../../src/geometry/profiles/segment';
 import { resolution } from '../../src/geometry/quality';
@@ -41,6 +42,8 @@ function body(id: PartId, specs: PartSpecs, q: Quality): { profile: Profile; n: 
       return { profile: baseProfile(specs.base, res.arcPerQuarter), n: res.revolve(specs.base.radius) };
     case 'top-cover':
       return { profile: coverProfile(specs.cover, Math.max(2, Math.round(res.arcPerQuarter / 2))), n: res.revolve(specs.cover.radius) };
+    case 'plate-clamp':
+      return { profile: clampProfile(specs.clamp), n: res.revolve(specs.clamp.radius) };
     case 'inner-segment':
       return { profile: segmentProfile(specs.inner), n: res.revolve(segmentRMax(specs.inner)) };
     case 'outer-segment':
@@ -132,9 +135,9 @@ describe('meshes', () => {
   it('mass estimates are within 5 % of Bambu Studio slices (grams per part)', () => {
     // sliced by scripts/slice-check.sh with the PRINT-PLAN settings (X1C / A1 mini, 0.6 nozzle, Generic PETG)
     const sliced: [string, LampParams, Partial<Record<PartId, number>>][] = [
-      ['defaults', defaultParams(), { base: 734.17, 'inner-segment': 26.12, 'outer-segment': 87.51, 'top-cover': 130.18, 'fit-test': 20.82 }],
-      ['led tube', ledTube(), { base: 889.47, 'top-cover': 131.89 }],
-      ['A1 mini', CASES.find((c) => c.name === 'A1 mini lamp')!.params, { base: 416.77, 'outer-segment': 65.25, 'top-cover': 86.42 }],
+      ['defaults', defaultParams(), { base: 768.65, 'inner-segment': 26.12, 'outer-segment': 87.51, 'top-cover': 130.18, 'plate-clamp': 7.5, 'fit-test': 20.82 }],
+      ['led tube', ledTube(), { base: 922.54, 'top-cover': 131.89 }],
+      ['A1 mini', CASES.find((c) => c.name === 'A1 mini lamp')!.params, { base: 437.02, 'outer-segment': 65.25, 'top-cover': 86.42 }],
     ];
     for (const [name, params, grams] of sliced) {
       const { layout } = derive(params);

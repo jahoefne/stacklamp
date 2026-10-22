@@ -9,7 +9,7 @@ import type { FrameBounds } from './framing';
 import type { ViewMode } from './types';
 
 export type LampPartId = Exclude<PartId, 'fit-test'>;
-export const LAMP_PART_IDS: readonly LampPartId[] = ['base', 'inner-segment', 'outer-segment', 'top-cover'];
+export const LAMP_PART_IDS: readonly LampPartId[] = ['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp'];
 
 export type Offset = [number, number, number];
 
@@ -47,6 +47,8 @@ export function computeLayout(dims: DerivedDims, mode: ViewMode): LayoutState {
       'inner-segment': Array.from({ length: n('inner-segment') }, (_, k): Offset => [0, 0, k * step]),
       'outer-segment': Array.from({ length: n('outer-segment') }, (_, k): Offset => [outerShift, 0, k * step]),
       'top-cover': Array.from({ length: n('top-cover') }, (): Offset => [0, 0, topIndex * step]),
+      // the plate clamp stays inside the base's pocket in every view
+      'plate-clamp': Array.from({ length: n('plate-clamp') }, zero),
     },
     outerGlow: mode === 'inner' ? INNER_VIEW_GHOST : 1,
     outerSheen: mode === 'inner' ? 0 : 1,

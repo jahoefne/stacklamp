@@ -113,7 +113,7 @@ describe('derived values', () => {
     expect(selectPreviewStale(s)).toBe(false);
     expect(selectPreviewDims(s)).toBe(selectDims(s));
     const bom = selectBom(s)!;
-    expect(bom.parts.map((p) => p.part)).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover']);
+    expect(bom.parts.map((p) => p.part)).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp']);
     const total = bom.colours.reduce((n, c) => n + c.inner + c.outer, 0);
     expect(total).toBe(selectCounts(s).nInner + selectCounts(s).nOuter);
     store.getState().actions.setUi({ glow: 'off' });
