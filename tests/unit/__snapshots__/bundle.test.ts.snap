@@ -123,7 +123,7 @@ Slicers ignore the colours stored in the 3MF files (they are a viewer hint only)
 - All parts: 0.6 mm nozzle, PETG at 240–250 °C, bed 70–80 °C on the **Textured PEI plate** (Bambu Studio's Generic PETG profile has no Cool Plate temperature).
 - One object per plate, left where the file places it (centred on the bed).
 
-### Segments (and the fit test) — spiral vase
+### Segments — spiral vase
 
 - Line width = wall = 0.8 mm: in Bambu Studio set Quality → Line width → **Outer wall** and **First layer** to 0.8 mm.
 - Spiral vase mode on: 1 wall, 0 top and 0 bottom layers, 0 % infill.
@@ -132,7 +132,7 @@ Slicers ignore the colours stored in the 3MF files (they are a viewer hint only)
 - **Elephant-foot compensation 0.** In vase mode it pulls the single line inward and narrows the socket mouth: 0.15 mm would leave 0.1 mm instead of 0.25 mm clearance around the rim below.
 - Print the foot (socket) down, as exported.
 - Normal (non-vase) mode works too with 1 wall and **Wall generator = Arachne**: the classic generator prints the wall as two overlapping 0.62 mm loops, about 1.5× the material and oversized.
-- **Print the fit test first** (2 rings): push one ring's foot over the other's rim. It should slide on with light pressure and sit on the 45° shoulder without wobble. Too tight → raise the joint clearance by 0.05 mm (now 0.25 mm); loose → lower it.
+- Tip: tick "Include fit test" in the download panel to get two short rings for checking the joint clearance (now 0.25 mm) before printing every segment.
 
 ### Base — normal mode
 

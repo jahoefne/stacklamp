@@ -147,7 +147,7 @@ export function printPlanMarkdown(input: DocInput): string {
     ].join('\n'),
     '',
   );
-  out.push('### Segments (and the fit test) — spiral vase', '');
+  out.push(req.includeFitTest ? '### Segments (and the fit test) — spiral vase' : '### Segments — spiral vase', '');
   out.push(
     [
       `- Line width = wall = ${w} mm: in Bambu Studio set Quality → Line width → **Outer wall** and **First layer** to ${w} mm.`,
@@ -157,7 +157,13 @@ export function printPlanMarkdown(input: DocInput): string {
       `- **Elephant-foot compensation 0.** In vase mode it pulls the single line inward and narrows the socket mouth: 0.15 mm would leave ${num(Math.max(0, c - 0.15))} mm instead of ${num(c)} mm clearance around the rim below.`,
       '- Print the foot (socket) down, as exported.',
       '- Normal (non-vase) mode works too with 1 wall and **Wall generator = Arachne**: the classic generator prints the wall as two overlapping 0.62 mm loops, about 1.5× the material and oversized.',
-      `- **Print the fit test first** (2 rings): push one ring's foot over the other's rim. It should slide on with light pressure and sit on the 45° shoulder without wobble. Too tight → raise the joint clearance by 0.05 mm (now ${num(c)} mm); loose → lower it.`,
+      ...(req.includeFitTest
+        ? [
+            `- **Print the fit test first** (2 rings): push one ring's foot over the other's rim. It should slide on with light pressure and sit on the 45° shoulder without wobble. Too tight → raise the joint clearance by 0.05 mm (now ${num(c)} mm); loose → lower it.`,
+          ]
+        : [
+            `- Tip: tick "Include fit test" in the download panel to get two short rings for checking the joint clearance (now ${num(c)} mm) before printing every segment.`,
+          ]),
     ].join('\n'),
     '',
   );
