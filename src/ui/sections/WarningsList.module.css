@@ -7,6 +7,7 @@
   padding: 0;
   list-style: none;
   border: var(--border-bold) solid var(--color-ink);
+  container-type: inline-size;
 }
 
 .row {
@@ -94,9 +95,13 @@
   }
 }
 
-@media (max-width: 599.98px) {
+/* The list lives in a 380–460 px panel on desktop: a third column for the fix link squeezes
+   the message into a 200 px ribbon, so the link moves under the text whenever the list is
+   narrow (desktop panel and phones). The tablet panel (640 px) keeps three columns. */
+@container (max-width: 559.98px) {
   .row {
     grid-template-columns: 28px minmax(0, 1fr);
+    row-gap: var(--space-1);
   }
 
   .fix {
@@ -116,12 +121,31 @@
   align-items: center;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3);
   border: var(--border-bold) solid var(--color-danger);
   background: var(--color-paper);
   box-shadow: inset 4px 0 0 var(--color-danger);
   font-size: var(--fs-sm);
   line-height: var(--lh-snug);
+}
+
+/* Two columns: stick level with the sticky preview (16 px down) instead of flush with the
+   viewport edge, and mask the 16 px above so fields don't scroll through the gap. */
+@media (min-width: 960px) {
+  .sticky {
+    top: var(--space-4);
+  }
+
+  .sticky::before {
+    content: '';
+    position: absolute;
+    right: calc(-1 * var(--border-bold));
+    bottom: calc(100% + var(--border-bold));
+    left: calc(-1 * var(--border-bold));
+    height: var(--space-4);
+    background: var(--color-paper);
+    pointer-events: none;
+  }
 }
 
 .stickyIcon {
@@ -134,25 +158,45 @@
   color: var(--color-paper);
 }
 
+/* The strip is a summary (the full list is under Checks): at most two lines, so it stays a
+   thin bar over the panel instead of a 4-line block on phones. */
 .stickyText {
+  display: -webkit-box;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
+/* A printed action like every other secondary button: offset shadow, lift, sink. */
 .stickyButton {
   flex: none;
   min-height: 36px;
   padding: 0 var(--space-3);
   border: var(--border-bold) solid var(--color-ink);
   background: var(--color-paper);
+  box-shadow: var(--shadow-block);
   font-size: var(--fs-sm);
   font-weight: var(--fw-bold);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
 }
 
 @media (hover: hover) {
   .stickyButton:hover {
     background: var(--block-1);
+    box-shadow: var(--shadow-pop);
+    transform: translate(-2px, -2px);
   }
+}
+
+.stickyButton:active {
+  box-shadow: var(--shadow-press);
+  transform: translate(3px, 3px);
 }
 
 .stickyButton:focus-visible {

@@ -1,4 +1,4 @@
-import { useId, type ReactElement } from 'react';
+import { useId, useLayoutEffect, useRef, type ReactElement } from 'react';
 import type { Bom, PetgColour } from '../../geometry';
 import { cancelDownload, download, selectBlockers, selectBom, selectPalette, useLamp, useLampActions } from '../../state';
 import type { ExportJob, LampState } from '../../state';
@@ -49,6 +49,28 @@ export function DownloadPanel(): ReactElement {
   const blocked = blockers.length > 0;
   // selectBlockers lists the engine state first, then the error messages.
   const errors = engine === 'ready' ? blockers : blockers.slice(1);
+  const zipRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  /** True while the export started from the focused button keeps focus on Cancel. */
+  const parked = useRef(false);
+
+  const onDownload = () => {
+    parked.current = document.activeElement === zipRef.current;
+    void download();
+  };
+
+  // The busy button is disabled, which drops keyboard focus to <body>: park focus on
+  // Cancel while the export runs and hand it back to the button when it ends.
+  useLayoutEffect(() => {
+    if (!parked.current) return;
+    if (running) {
+      cancelRef.current?.focus();
+      return;
+    }
+    parked.current = false;
+    const active = document.activeElement;
+    if (!active || active === document.body) zipRef.current?.focus();
+  }, [running]);
 
   let status = '';
   if (job.phase === 'running') status = stageText(job.stage, job.done, job.total);
@@ -82,13 +104,14 @@ export function DownloadPanel(): ReactElement {
 
       <div className={styles.action}>
         <Button
+          ref={zipRef}
           variant="primary"
           size="wide"
           icon="download"
           busy={running}
           disabled={blocked || running}
           aria-describedby={blocked ? reasonId : undefined}
-          onClick={() => void download()}
+          onClick={onDownload}
           data-testid="download-zip"
         >
           {running ? status : 'Download ZIP'}
@@ -105,7 +128,7 @@ export function DownloadPanel(): ReactElement {
             >
               <span className={styles.progressFill} style={{ width: `${Math.round(exportProgress(job) * 100)}%` }} />
             </div>
-            <Button variant="ghost" size="sm" onClick={cancelDownload}>
+            <Button ref={cancelRef} variant="ghost" size="sm" onClick={cancelDownload}>
               Cancel
             </Button>
           </div>

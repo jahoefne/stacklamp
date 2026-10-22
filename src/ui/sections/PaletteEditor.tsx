@@ -65,6 +65,11 @@ export function PaletteEditor(): ReactElement {
     }
   };
 
+  // A removed row takes the focused button with it: move focus to the brush swatch.
+  const focusBrush = () => {
+    setTimeout(() => swatchRefs.current.get(lampStore.getState().ui.brush)?.focus(), 0);
+  };
+
   const onReset = () => {
     const before = lampStore.getState().config;
     resetPalette();
@@ -97,6 +102,7 @@ export function PaletteEditor(): ReactElement {
               else swatchRefs.current.delete(c.id);
             }}
             canRemove={palette.length > 1}
+            onRemoved={focusBrush}
           />
         ))}
       </div>
@@ -133,6 +139,8 @@ interface RowProps {
   onMix(): void;
   swatchRef(el: HTMLButtonElement | null): void;
   canRemove: boolean;
+  /** Called after this colour was removed (its row unmounts). */
+  onRemoved(): void;
 }
 
 function PaletteRow({
@@ -150,9 +158,11 @@ function PaletteRow({
   onMix,
   swatchRef,
   canRemove,
+  onRemoved,
 }: RowProps): ReactElement {
   const { updateColour, removeColour } = useLampActions();
   const [confirm, setConfirm] = useState(false);
+  const trashRef = useRef<HTMLButtonElement>(null);
   const others = palette.filter((c) => c.id !== colour.id);
   const [replacement, setReplacement] = useState(others[0]?.id ?? '');
   const editId = `palette-edit-${colour.id}`;
@@ -164,7 +174,10 @@ function PaletteRow({
 
   const onRemove = () => {
     if (usage.total > 0) setConfirm(true);
-    else removeColour(colour.id);
+    else {
+      removeColour(colour.id);
+      onRemoved();
+    }
   };
 
   return (
@@ -209,6 +222,7 @@ function PaletteRow({
           onClick={() => onEdit(!editing)}
         />
         <IconButton
+          ref={trashRef}
           icon="trash"
           tone="row"
           size="sm"
@@ -240,11 +254,19 @@ function PaletteRow({
               onClick={() => {
                 removeColour(colour.id, replacement);
                 setConfirm(false);
+                onRemoved();
               }}
             >
               Remove
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setConfirm(false);
+                trashRef.current?.focus();
+              }}
+            >
               Cancel
             </Button>
           </div>

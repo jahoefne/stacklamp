@@ -49,6 +49,12 @@
   bottom: auto;
 }
 
+/* …so the drawing starts below the pill (12 + 28 + 12): on phones its top "Ø 200"
+   dimension sat under the pill. */
+.stage:has(> .overlayTop) > .canvas {
+  padding-top: calc(2 * var(--space-3) + 28px);
+}
+
 .hint {
   margin: 0;
   font-size: var(--fs-xs);
@@ -56,10 +62,27 @@
   text-align: right;
 }
 
-/* Phones: the stage goes full bleed; the toolbar stays inside the gutters. */
+/* Phones: the stage goes full bleed; the toolbar stays inside the gutters. The view switch
+   and the two tool buttons can't share a row at 375 px, so instead of a ragged wrap they
+   form two full-width rows: [Assembled | Inner | Exploded] over [Reset view][Glow]. */
 @media (max-width: 599.98px) {
   .stage {
     margin-inline: calc(-1 * var(--layout-gutter));
+  }
+
+  .toolbar > [role='toolbar'] {
+    display: grid;
+    flex: 1 1 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolbar > [role='toolbar'] > [role='radiogroup'] {
+    display: flex;
+    grid-column: 1 / -1;
+  }
+
+  .toolbar > [role='toolbar'] > [role='radiogroup'] > * {
+    flex: 1 1 0;
   }
 }
 

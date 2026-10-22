@@ -1,8 +1,20 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { lampStore, resetLampStore, selectBlockers } from '../../state';
 import { DownloadPanel, blockedText } from './DownloadPanel';
+
+// No worker in jsdom: the download only flips the job to 'running'.
+vi.mock('../../state', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../state')>();
+  return {
+    ...mod,
+    download: vi.fn(async () => {
+      mod.lampStore.getState().actions.setExportJob({ phase: 'running', stage: 'base', done: 0, total: 7 });
+      return true;
+    }),
+  };
+});
 
 beforeEach(() => resetLampStore({ persistPresets: false }));
 afterEach(() => {
@@ -60,6 +72,17 @@ describe('DownloadPanel', () => {
     expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('29');
     act(() => actions().setExportJob({ phase: 'running', stage: 'zip', done: 6, total: 7 }));
     expect(screen.getByTestId('download-zip').textContent).toContain('Zipping…');
+  });
+
+  it('keeps keyboard focus on Cancel while the export runs and returns it to the button', () => {
+    render(<DownloadPanel />);
+    act(() => actions().setEngine({ status: 'ready' }));
+    button().focus();
+    act(() => button().click());
+    expect(lampStore.getState().exportJob.phase).toBe('running');
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' }));
+    act(() => actions().setExportJob({ phase: 'done', fileName: 'stacklamp.zip' }));
+    expect(document.activeElement).toBe(screen.getByTestId('download-zip'));
   });
 
   it('words the reason by engine state', () => {

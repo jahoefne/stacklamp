@@ -7,6 +7,14 @@
   font-size: var(--fs-sm);
 }
 
+/* Below 960 px the configurator already ends with the mini-bar's 64 px slot (empty once
+   the download panel is on screen), so the full 64 px margin left a ~190 px hole. */
+@media (max-width: 959.98px) {
+  .footer {
+    margin-top: var(--space-4);
+  }
+}
+
 .inner {
   display: flex;
   flex-direction: column;
@@ -35,6 +43,19 @@
 .link:focus-visible {
   outline: var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+/* 44 px touch target without changing the line: an invisible hit area around the text. */
+@media (pointer: coarse) {
+  .link {
+    position: relative;
+  }
+
+  .link::after {
+    content: '';
+    position: absolute;
+    inset: calc((var(--target-min) - 1em) / -2) 0;
+  }
 }
 
 .safety {

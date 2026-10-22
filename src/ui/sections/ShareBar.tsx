@@ -32,6 +32,7 @@ export function ShareBar(): ReactElement {
   const nameRef = useRef<HTMLInputElement>(null);
   const linkRef = useRef<HTMLInputElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
+  const saveToggleRef = useRef<HTMLButtonElement>(null);
   const trashRefs = useRef(new Map<string, HTMLButtonElement>());
 
   useEffect(() => {
@@ -69,7 +70,15 @@ export function ShareBar(): ReactElement {
       setSaving(false);
       setName('');
       setChoice(`${SAVED_PREFIX}${clean}`);
+      // The form unmounts: keep focus on the select that now shows the saved preset.
+      selectRef.current?.focus();
     }
+  };
+
+  /** Close the name form without saving, focus back on its toggle. */
+  const cancelSave = () => {
+    setSaving(false);
+    saveToggleRef.current?.focus();
   };
 
   const onCopy = async () => {
@@ -127,7 +136,7 @@ export function ShareBar(): ReactElement {
         <Button size="sm" variant="secondary" icon="link" onClick={() => void onCopy()}>
           Copy link
         </Button>
-        <Button size="sm" variant="ghost" icon="plus" aria-expanded={saving} onClick={() => setSaving((v) => !v)}>
+        <Button ref={saveToggleRef} size="sm" variant="ghost" icon="plus" aria-expanded={saving} onClick={() => setSaving((v) => !v)}>
           Save preset
         </Button>
         <Button
@@ -159,14 +168,14 @@ export function ShareBar(): ReactElement {
             aria-describedby={exists ? `${nameId}-hint` : undefined}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') setSaving(false);
+              if (e.key === 'Escape') cancelSave();
             }}
           />
           <div className={styles.formActions}>
             <Button type="submit" size="sm" variant="secondary" disabled={cleanPresetName(name) === ''}>
               Save
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setSaving(false)}>
+            <Button size="sm" variant="ghost" onClick={cancelSave}>
               Cancel
             </Button>
           </div>

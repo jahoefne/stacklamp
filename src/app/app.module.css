@@ -132,6 +132,12 @@
   flex-direction: column;
 }
 
+/* While the sticky error strip (role="status", first in the panel) is up, section jumps
+   (its "Show" button scrolls to Checks) land below it instead of under it. */
+.panelStack:has(> [role='status']) > section {
+  scroll-margin-top: calc(var(--space-4) + 4.5rem);
+}
+
 /* ── Crash screen ───────────────────────────────────────────────────── */
 
 .crash {

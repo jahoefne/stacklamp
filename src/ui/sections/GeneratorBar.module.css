@@ -5,6 +5,7 @@
   padding: var(--space-3);
   border: var(--border-bold) solid var(--color-ink);
   background: var(--color-paper-2);
+  container-type: inline-size;
 }
 
 .top {
@@ -14,10 +15,18 @@
   gap: var(--space-3);
 }
 
+/* Four equal printed blocks: 2 × 2 in the desktop panel and on phones (a free wrap left
+   "Mirror" orphaned on its own row), one row of four when the strip is wide (tablet). */
 .buttons {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
+}
+
+@container (min-width: 34rem) {
+  .buttons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .hint {
