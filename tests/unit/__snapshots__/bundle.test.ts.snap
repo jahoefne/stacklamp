@@ -26,7 +26,7 @@ Configuration: https://jahoefne.github.io/stacklamp/#v=1
 
 1. Press the weight plate into the pocket on the underside of the base. If it rattles, a few dots of hot glue or a strip of tape hold it.
 2. Push the rod into the collar until it stands on the socket floor, 15 mm below the base top. Tighten the 3 screws (27.75 mm above the base top) evenly so the rod stands upright.
-3. Wrap the LED strip around the rod from the collar top (78 mm) up to 1515.5 mm, leaving the top 15 mm free for the cover boss. Secure both ends.
+3. Wrap the LED strip around the rod from the collar top (78 mm) up to 1515.5 mm, where the cover boss begins: the top 12.5 mm of the rod slide into the boss and stay bare. Secure both ends.
 4. Route the strip's lead down the Ø 8 mm hole beside the collar into the tunnel and out of the base rim. Connect it to the power supply outside the lamp.
 5. Stack the 11 inner segments onto the inner ring of the base, foot (socket) down, in the colour order of PRINT-PLAN.md (band 1 at the bottom). Each foot slides over the rim below and sits on its 45° shoulder.
 6. Stack the 11 outer segments onto the outer ring the same way.
@@ -35,7 +35,7 @@ Configuration: https://jahoefne.github.io/stacklamp/#v=1
 ## Safety
 
 - Use **only SELV LED strips (12 V or 24 V)** with a certified, correctly rated power supply. Never bring mains voltage into the lamp.
-- **PETG softens at about 80 °C.** Keep the air intakes in the base and the slits in the cover open so warm air can rise through the stacks; use moderate strip power (aluminium rod as heat sink) and check after an hour that no part gets hot to the touch.
+- **PETG softens at about 80 °C.** Keep the air intakes in the base and the slits in the cover open so warm air can rise through the stacks; use moderate strip power (the aluminium rod works as a heat sink) and check after an hour that no part gets hot to the touch.
 - **Anchor the lamp against tipping.** It is 1.53 m tall on a 240 mm base: always use the weight plate, stand it on a level floor and keep it out of reach of small children and pets.
 - The printed parts are not a structural load path: do not lift the lamp by the cover or the segments.
 "
@@ -60,7 +60,7 @@ Reopen this lamp: https://jahoefne.github.io/stacklamp/#v=1
 | Rod end | 2.5 mm below the cover's boss hole ceiling |
 | Inner stack top | 2.2 mm below the cover plate |
 
-## Printer fit — Bambu Lab P1S / X1C / A1 (256 mm), 256 × 256 × 256 mm
+## Printer fit — Bambu Lab P1S / X1C / A1, 256 × 256 × 250 mm
 
 | Part | Size (mm) | Fits bed | Fits height |
 |---|---|---|---|
@@ -73,20 +73,20 @@ Reopen this lamp: https://jahoefne.github.io/stacklamp/#v=1
 
 | File | Part | Copies | Colours | Triangles | Volume each (cm³) | Solid each (g) | Estimate each (g) | Estimate total (g) |
 |---|---|---:|---|---:|---:|---:|---:|---:|
-| base.3mf | Base | 1 | any (opaque recommended) | 53,950 | 1488.2 | 1890.0 | 669.2 | 669 |
-| inner-segment.3mf | Inner segment | 11 | Clear × 6, Amber × 5 | 4,000 | 23.1 | 29.3 | 29.3 | 322 |
-| outer-segment.3mf | Outer segment | 11 | Amber × 4, Teal × 4, Clear × 3 | 12,800 | 77.5 | 98.4 | 98.4 | 1082 |
-| top-cover.3mf | Top cover | 1 | any (opaque recommended) | 33,408 | 131.1 | 166.5 | 166.5 | 166 |
+| base.3mf | Base | 1 | any (opaque recommended) | 53,950 | 1488.2 | 1890.0 | 733.2 | 733 |
+| inner-segment.3mf | Inner segment | 11 | Clear × 6, Amber × 5 | 4,000 | 23.1 | 29.3 | 26.9 | 296 |
+| outer-segment.3mf | Outer segment | 11 | Amber × 4, Teal × 4, Clear × 3 | 12,800 | 77.5 | 98.4 | 90.5 | 995 |
+| top-cover.3mf | Top cover | 1 | any (opaque recommended) | 33,408 | 131.1 | 166.5 | 125.5 | 125 |
 
-Total ≈ 2240 g / 733 m of 1.75 mm PETG (density 1.27 g/cm³). Segments print as solid vase walls; the base and cover estimates assume 4 walls and 20 % infill.
+Total ≈ 2150 g / 704 m of 1.75 mm PETG (density 1.27 g/cm³). The estimates are what the slicer extrudes with the settings below: vase lines with rounded flanks for the segments, walls + 20 % infill for the base and cover; the base includes ≈ 52 g of tree supports.
 
 ### Filament per colour
 
 | Colour | Inner segments | Outer segments | Mass (g) | Filament (m) |
 |---|---:|---:|---:|---:|
-| Clear (#e8eef0) | 6 | 3 | 471 | 154.1 |
-| Amber (#f0a020) | 5 | 4 | 540 | 176.7 |
-| Teal (#109090) | 0 | 4 | 393 | 128.8 |
+| Clear (#e8eef0) | 6 | 3 | 433 | 141.7 |
+| Amber (#f0a020) | 5 | 4 | 496 | 162.5 |
+| Teal (#109090) | 0 | 4 | 362 | 118.4 |
 
 ### Colour order (bottom → top)
 
@@ -120,28 +120,30 @@ Slicers ignore the colours stored in the 3MF files (they are a viewer hint only)
 
 ## Slicer settings
 
+- All parts: 0.6 mm nozzle, PETG at 240–250 °C, bed 70–80 °C on the **Textured PEI plate** (Bambu Studio's Generic PETG profile has no Cool Plate temperature).
+- One object per plate, left where the file places it (centred on the bed).
+
 ### Segments (and the fit test) — spiral vase
 
-- Nozzle 0.6 mm, line width = wall = 0.8 mm.
+- Line width = wall = 0.8 mm: in Bambu Studio set Quality → Line width → **Outer wall** and **First layer** to 0.8 mm.
 - Spiral vase mode on: 1 wall, 0 top and 0 bottom layers, 0 % infill.
-- Layer height 0.3 mm.
-- PETG: nozzle 240–250 °C, bed 70–80 °C, part cooling fan 30–50 %.
+- Layer height 0.3 mm, part cooling fan 30–50 %.
 - Brim 5 mm on the outer segments (tall and thin); none needed on the inner ones.
-- Elephant-foot compensation 0.15 mm: the foot is a socket and must not flare.
-- One object per plate; print the foot (socket) down, as exported.
+- **Elephant-foot compensation 0.** In vase mode it pulls the single line inward and narrows the socket mouth: 0.15 mm would leave 0.1 mm instead of 0.25 mm clearance around the rim below.
+- Print the foot (socket) down, as exported.
+- Normal (non-vase) mode works too with 1 wall and **Wall generator = Arachne**: the classic generator prints the wall as two overlapping 0.62 mm loops, about 1.5× the material and oversized.
 - **Print the fit test first** (2 rings): push one ring's foot over the other's rim. It should slide on with light pressure and sit on the 45° shoulder without wobble. Too tight → raise the joint clearance by 0.05 mm (now 0.25 mm); loose → lower it.
 
 ### Base — normal mode
 
-- Print top-up, as exported.
-- 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers.
+- Print top-up, as exported, and **keep it centred** on the bed: Bambu Studio's auto-arrange keeps a margin around parts with supports and refuses a 240 mm base on a 256 mm bed.
+- 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers, elephant-foot compensation 0.15 mm.
 - **Tree supports, on build plate only**: the 158 mm plate pocket in the underside has a flat ceiling. The cable tunnel has a 45° teardrop roof and needs no support.
-- PETG 240–250 °C, bed 70–80 °C.
 
 ### Top cover — normal mode
 
 - Print plate-down, as exported (rings and boss pointing up), no supports. The top edge is a 45° chamfer blending into a round, so nothing overhangs more than 45°.
-- 3–4 walls, 20 % infill, 0.2 mm layers for a clean top surface.
+- 3 walls, 20 % infill, 0.2 mm layers for a clean top surface, elephant-foot compensation 0.15 mm.
 
 ## Notes
 
@@ -215,7 +217,7 @@ exports[`export ZIP > documents (snapshot) > config.json 1`] = `
       "preset": "bambu-256",
       "bedX": 256,
       "bedY": 256,
-      "bedZ": 256
+      "bedZ": 250
     },
     "tolerances": {
       "segment": 0.25,

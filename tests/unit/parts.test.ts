@@ -18,7 +18,9 @@ import { resolution } from '../../src/geometry/quality';
 import { PART_IDS, type PartId, type Quality } from '../../src/geometry/types';
 import { defaultParams } from '../../src/geometry/params';
 import { getKernel } from '../helpers/kernel';
-import { CASES } from '../helpers/params';
+import { CASES, ledTube } from '../helpers/params';
+import { vaseFill } from '../../src/geometry/estimate';
+import type { LampParams } from '../../src/geometry/types';
 
 let k: Kernel;
 beforeAll(async () => {
@@ -105,7 +107,8 @@ describe('meshes', () => {
     const inner = buildPartMesh(k, 'inner-segment', layout!.specs, 'export', copiesOf('inner-segment', counts));
     expect(Math.abs(outer.massGrams.solid / 98 - 1)).toBeLessThan(0.05);
     expect(Math.abs(inner.massGrams.solid / 29 - 1)).toBeLessThan(0.05);
-    expect(outer.massGrams.estimate).toBe(outer.massGrams.solid);
+    // a vase line has rounded flanks: it fills ~92 % of the solid 0.8 mm wall
+    expect(outer.massGrams.estimate / outer.massGrams.solid).toBeCloseTo(vaseFill(0.8), 9);
     expect(outer.copies).toBe(11);
     expect(outer.normals).toBeUndefined();
     expect(outer.indices.length).toBe(outer.triangleCount * 3);
@@ -126,10 +129,19 @@ describe('meshes', () => {
     }
   });
 
-  it('base and cover mass estimates assume walls + infill', () => {
-    const { layout } = derive(defaultParams());
-    const base = buildPartMesh(k, 'base', layout!.specs, 'export', 1);
-    expect(base.massGrams.estimate).toBeLessThan(0.5 * base.massGrams.solid);
-    expect(base.massGrams.estimate).toBeGreaterThan(0.2 * base.massGrams.solid);
+  it('mass estimates are within 5 % of Bambu Studio slices (grams per part)', () => {
+    // sliced by scripts/slice-check.sh with the PRINT-PLAN settings (X1C / A1 mini, 0.6 nozzle, Generic PETG)
+    const sliced: [string, LampParams, Partial<Record<PartId, number>>][] = [
+      ['defaults', defaultParams(), { base: 734.17, 'inner-segment': 26.12, 'outer-segment': 87.51, 'top-cover': 130.18, 'fit-test': 20.82 }],
+      ['led tube', ledTube(), { base: 889.47, 'top-cover': 131.89 }],
+      ['A1 mini', CASES.find((c) => c.name === 'A1 mini lamp')!.params, { base: 416.77, 'outer-segment': 65.25, 'top-cover': 86.42 }],
+    ];
+    for (const [name, params, grams] of sliced) {
+      const { layout } = derive(params);
+      for (const [id, g] of Object.entries(grams) as [PartId, number][]) {
+        const m = buildPartMesh(k, id, layout!.specs, 'export', 1);
+        expect(Math.abs(m.massGrams.estimate / g - 1), `${name} ${id}: ${m.massGrams.estimate.toFixed(1)} g vs ${g} g`).toBeLessThan(0.05);
+      }
+    }
   });
 });

@@ -11,11 +11,6 @@ import type { PartId, PartMesh, Quality } from './types';
 
 /** Edges sharper than this keep separate normals on each side in preview meshes, degrees. */
 export const PREVIEW_SHARP_ANGLE = 35;
-/** Shell thickness assumed for solid parts (4 walls / 5 top-bottom layers), mm. */
-export const SHELL_THICKNESS = 1.6;
-/** Infill of solid parts. */
-export const INFILL = 0.2;
-
 /** What toPartMesh reads of a manifold-3d Mesh. */
 export interface MeshLike {
   numProp: number;
@@ -88,15 +83,12 @@ export function positionsAndNormals(mesh: MeshLike): { positions: Float32Array; 
   return { positions, normals, indices: new Uint32Array(triVerts) };
 }
 
-export type MassModel = 'vase' | 'solid';
-
-/** Solid mass and a realistic estimate (vase parts print solid walls; solid parts get a shell + infill). */
-export function massOf(volume: number, surfaceArea: number, model: MassModel): { solid: number; estimate: number } {
-  const solid = (volume * PETG_DENSITY_G_CM3) / 1000;
-  if (model === 'vase') return { solid, estimate: solid };
-  const shell = Math.min(volume, surfaceArea * SHELL_THICKNESS);
-  const printed = shell + INFILL * (volume - shell);
-  return { solid, estimate: (printed * PETG_DENSITY_G_CM3) / 1000 };
+/** Solid mass and the realistic estimate (from the printed volume, see estimate.ts), grams. */
+export function massOf(volume: number, printedVolume: number): { solid: number; estimate: number } {
+  return {
+    solid: (volume * PETG_DENSITY_G_CM3) / 1000,
+    estimate: (Math.max(0, printedVolume) * PETG_DENSITY_G_CM3) / 1000,
+  };
 }
 
 export interface ToPartMeshOptions {
@@ -104,12 +96,12 @@ export interface ToPartMeshOptions {
   quality: Quality;
   copies: number;
   normals: boolean;
-  mass: MassModel;
+  /** Printed volume (what the slicer extrudes) for a solid volume, mm³. */
+  printed: (volume: number) => number;
 }
 
 export function toPartMesh(s: Scope, m: Manifold, o: ToPartMeshOptions): PartMesh {
   const volume = m.volume();
-  const area = m.surfaceArea();
   const box = m.boundingBox();
   const base = {
     id: o.id,
@@ -121,7 +113,7 @@ export function toPartMesh(s: Scope, m: Manifold, o: ToPartMeshOptions): PartMes
       max: [box.max[0], box.max[1], box.max[2]] as [number, number, number],
     },
     copies: o.copies,
-    massGrams: massOf(volume, area, o.mass),
+    massGrams: massOf(volume, o.printed(volume)),
   };
   if (o.normals) {
     const withNormals = s.add(m.calculateNormals(0, PREVIEW_SHARP_ANGLE));

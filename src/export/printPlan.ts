@@ -5,10 +5,14 @@
  */
 import { PRINTER_PRESETS } from '../geometry/params';
 import { computeBom, FILAMENT_DIAMETER_MM, PETG_DENSITY_G_CM3 } from '../geometry/bom';
+import { supportVolume } from '../geometry/estimate';
 import { PART_LABELS } from '../geometry/messages';
 import type { DerivedDims, ExportRequest, PartId, PartMesh } from '../geometry/types';
 import { colourById, colourSummary } from './colours';
 import { fixed, int, num, percent, table, yesNo } from './format';
+
+/** Margin Bambu Studio's auto-arrange keeps around a part with supports, mm (observed). */
+export const ARRANGE_MARGIN = 12;
 
 export interface DocInput {
   req: ExportRequest;
@@ -65,7 +69,8 @@ export function printPlanMarkdown(input: DocInput): string {
     '',
   );
 
-  out.push(`## Printer fit — ${printer.label}, ${num(p.printer.bedX)} × ${num(p.printer.bedY)} × ${num(p.printer.bedZ)} mm`, '');
+  const printerName = p.printer.preset === 'custom' ? 'custom printer' : printer.label.replace(/\s*\([^)]*\)\s*$/, '');
+  out.push(`## Printer fit — ${printerName}, ${num(p.printer.bedX)} × ${num(p.printer.bedY)} × ${num(p.printer.bedZ)} mm`, '');
   out.push(
     table(
       ['Part', 'Size (mm)', 'Fits bed', 'Fits height'],
@@ -100,9 +105,11 @@ export function printPlanMarkdown(input: DocInput): string {
     ),
     '',
   );
+  const supportGrams = (supportVolume(dims.base.pocketDiameter / 2, dims.base.pocketDepth) * PETG_DENSITY_G_CM3) / 1000;
   out.push(
     `Total ≈ ${fixed(bom.totalGrams, 0)} g / ${fixed(bom.totalMetres, 0)} m of ${FILAMENT_DIAMETER_MM} mm PETG (density ${PETG_DENSITY_G_CM3} g/cm³). ` +
-      'Segments print as solid vase walls; the base and cover estimates assume 4 walls and 20 % infill.',
+      'The estimates are what the slicer extrudes with the settings below: vase lines with rounded flanks for the segments, ' +
+      `walls + 20 % infill for the base and cover; the base includes ≈ ${fixed(supportGrams, 0)} g of tree supports.`,
     '',
   );
 
@@ -127,28 +134,43 @@ export function printPlanMarkdown(input: DocInput): string {
   }
 
   const w = num(p.segments.wall);
+  const c = p.tolerances.segment;
+  const bedXY = Math.min(p.printer.bedX, p.printer.bedY);
   out.push('## Slicer settings', '');
+  out.push(
+    [
+      '- All parts: 0.6 mm nozzle, PETG at 240–250 °C, bed 70–80 °C on the **Textured PEI plate** (Bambu Studio\'s Generic PETG profile has no Cool Plate temperature).',
+      '- One object per plate, left where the file places it (centred on the bed).',
+      ...(req.format === 'stl'
+        ? ['- STL files store float32 coordinates: on import a slicer may weld a few dozen sliver triangles of the base and cover. That is harmless.']
+        : []),
+    ].join('\n'),
+    '',
+  );
   out.push('### Segments (and the fit test) — spiral vase', '');
   out.push(
     [
-      `- Nozzle 0.6 mm, line width = wall = ${w} mm.`,
+      `- Line width = wall = ${w} mm: in Bambu Studio set Quality → Line width → **Outer wall** and **First layer** to ${w} mm.`,
       '- Spiral vase mode on: 1 wall, 0 top and 0 bottom layers, 0 % infill.',
-      '- Layer height 0.3 mm.',
-      '- PETG: nozzle 240–250 °C, bed 70–80 °C, part cooling fan 30–50 %.',
+      '- Layer height 0.3 mm, part cooling fan 30–50 %.',
       '- Brim 5 mm on the outer segments (tall and thin); none needed on the inner ones.',
-      '- Elephant-foot compensation 0.15 mm: the foot is a socket and must not flare.',
-      '- One object per plate; print the foot (socket) down, as exported.',
-      `- **Print the fit test first** (2 rings): push one ring's foot over the other's rim. It should slide on with light pressure and sit on the 45° shoulder without wobble. Too tight → raise the joint clearance by 0.05 mm (now ${num(p.tolerances.segment)} mm); loose → lower it.`,
+      `- **Elephant-foot compensation 0.** In vase mode it pulls the single line inward and narrows the socket mouth: 0.15 mm would leave ${num(Math.max(0, c - 0.15))} mm instead of ${num(c)} mm clearance around the rim below.`,
+      '- Print the foot (socket) down, as exported.',
+      '- Normal (non-vase) mode works too with 1 wall and **Wall generator = Arachne**: the classic generator prints the wall as two overlapping 0.62 mm loops, about 1.5× the material and oversized.',
+      `- **Print the fit test first** (2 rings): push one ring's foot over the other's rim. It should slide on with light pressure and sit on the 45° shoulder without wobble. Too tight → raise the joint clearance by 0.05 mm (now ${num(c)} mm); loose → lower it.`,
     ].join('\n'),
     '',
   );
   out.push('### Base — normal mode', '');
   out.push(
     [
-      '- Print top-up, as exported.',
-      '- 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers.',
+      `- Print top-up, as exported, and **keep it centred** on the bed${
+        p.base.diameter + 2 * ARRANGE_MARGIN > bedXY
+          ? `: Bambu Studio's auto-arrange keeps a margin around parts with supports and refuses a ${num(p.base.diameter)} mm base on a ${num(bedXY)} mm bed`
+          : ''
+      }.`,
+      '- 4 walls, 20 % gyroid infill, 5 top and 5 bottom layers, elephant-foot compensation 0.15 mm.',
       `- **Tree supports, on build plate only**: the ${num(dims.base.pocketDiameter)} mm plate pocket in the underside has a flat ceiling. The cable tunnel has a 45° teardrop roof and needs no support.`,
-      '- PETG 240–250 °C, bed 70–80 °C.',
     ].join('\n'),
     '',
   );
@@ -156,7 +178,7 @@ export function printPlanMarkdown(input: DocInput): string {
   out.push(
     [
       '- Print plate-down, as exported (rings and boss pointing up), no supports. The top edge is a 45° chamfer blending into a round, so nothing overhangs more than 45°.',
-      '- 3–4 walls, 20 % infill, 0.2 mm layers for a clean top surface.',
+      '- 3 walls, 20 % infill, 0.2 mm layers for a clean top surface, elephant-foot compensation 0.15 mm.',
     ].join('\n'),
     '',
   );

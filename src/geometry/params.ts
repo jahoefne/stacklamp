@@ -18,8 +18,9 @@ export const CORE_PRESETS: Record<CoreKind, CorePreset> = {
 };
 
 export const PRINTER_PRESETS: Record<PrinterId, PrinterPreset> = {
-  'bambu-256': { id: 'bambu-256', label: 'Bambu Lab P1S / X1C / A1 (256 mm)', bed: [256, 256, 256] },
-  'bambu-a1-mini': { id: 'bambu-a1-mini', label: 'Bambu Lab A1 mini (180 mm)', bed: [180, 180, 180] },
+  // X1C / P1S print 250 mm high (only the A1 reaches 256): use the common volume
+  'bambu-256': { id: 'bambu-256', label: 'Bambu Lab P1S / X1C / A1 (256 × 256 × 250)', bed: [256, 256, 250] },
+  'bambu-a1-mini': { id: 'bambu-a1-mini', label: 'Bambu Lab A1 mini (180 × 180 × 180)', bed: [180, 180, 180] },
   'prusa-mk4': { id: 'prusa-mk4', label: 'Prusa MK4 / Core One (250 × 210 × 220)', bed: [250, 210, 220] },
   'ender-3': { id: 'ender-3', label: 'Creality Ender 3 (220 × 220 × 250)', bed: [220, 220, 250] },
   custom: { id: 'custom', label: 'Custom bed size', bed: [256, 256, 256] },
@@ -69,7 +70,7 @@ export function defaultParams(): LampParams {
       innerSlits: 8,
       slitWidth: 3,
     },
-    printer: { preset: 'bambu-256', bedX: 256, bedY: 256, bedZ: 256 },
+    printer: { preset: 'bambu-256', bedX: 256, bedY: 256, bedZ: 250 },
     tolerances: { segment: 0.25, core: 0.3, plateRadial: 1.5, plateDepth: 1 },
   };
 }

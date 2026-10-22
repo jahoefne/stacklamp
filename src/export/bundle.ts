@@ -29,9 +29,11 @@ export function bundleEntryNames(format: ExportFormat, includeFitTest: boolean):
   return [...exportPartIds(includeFitTest).map((id) => partFileName(id, format)), ...DOC_FILES];
 }
 
-/** `stacklamp-L1500-o11x154.5-i11x154.3.zip` */
+/** `stacklamp-L1500-D200-rod-o11x154.5-i11x154.3.zip` (LED tube: `-tube-`): length, outer OD, core, stacks. */
 export function bundleFileName(req: Pick<ExportRequest, 'params'>, dims: DerivedDims): string {
-  return `stacklamp-L${num(req.params.core.length)}-o${dims.outer.count}x${num(dims.outer.height)}-i${dims.inner.count}x${num(dims.inner.height)}.zip`;
+  const p = req.params;
+  const core = p.core.kind === 'led-tube' ? 'tube' : 'rod';
+  return `stacklamp-L${num(p.core.length)}-D${num(p.tubes.outerOD)}-${core}-o${dims.outer.count}x${num(dims.outer.height)}-i${dims.inner.count}x${num(dims.inner.height)}.zip`;
 }
 
 /** One part file (3MF centred on the bed, or binary STL in the print frame). */

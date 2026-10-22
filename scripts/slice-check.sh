@@ -8,13 +8,15 @@
 #   info    `BambuStudio --info`: the mesh is closed (manifold = yes) and one part.
 #   vase    segments + fit test, as PRINT-PLAN.md says: spiral vase, 1 wall, line width = wall
 #           (read from the config.json next to the file), 0 top/bottom layers, 0 % infill,
-#           0.3 mm layers, brim 5 mm on the outer segment only, elephant-foot 0.15.
-#   normal  segments + fit test without vase mode: Arachne wall generator, otherwise stock.
+#           0.3 mm layers, brim 5 mm on the outer segment only, elephant-foot 0 (in vase mode it
+#           would pull the single line inward and narrow the socket mouth).
+#   normal  segments + fit test without vase mode: Arachne wall generator, elephant-foot 0.
 #           (The stock *classic* generator lays two overlapping 0.62 mm loops into a 0.8 mm
 #           wall, ~1.5x the material; with 1 wall at 0.8 it leaves gaps. Arachne prints one
 #           0.8 mm line, like vase mode.)
-#           base: 4 walls, 20 % gyroid, 5/5 shells, tree supports on build plate only, no brim.
-#           top-cover: 3 walls, 20 % infill, 0.2 mm layers, no supports, no brim.
+#           base: 4 walls, 20 % gyroid, 5/5 shells, tree supports on build plate only, no brim,
+#           elephant-foot 0.15. top-cover: 3 walls, 20 % infill, 0.2 mm layers, no supports, no
+#           brim, elephant-foot 0.15.
 # Machine: Bambu Lab A1 mini 0.6 nozzle when config.json says printer.preset = bambu-a1-mini,
 # otherwise Bambu Lab X1 Carbon 0.6 nozzle, with the matching "0.30mm Standard … 0.6 nozzle"
 # process, Generic PETG and the Textured PEI plate. The bundled system profiles use `inherits`
@@ -301,18 +303,18 @@ process_profile() {
     *segment:vase | fit-test:vase)
       flatten process "$base" "$out" "$BED" brim_type=$brim_type brim_width=$brim_width \
         spiral_mode=1 wall_loops=1 top_shell_layers=0 bottom_shell_layers=0 sparse_infill_density=0% \
-        enable_support=0 layer_height=0.3 elefant_foot_compensation=0.15 enable_arc_fitting=0 \
+        enable_support=0 layer_height=0.3 elefant_foot_compensation=0 enable_arc_fitting=0 \
         line_width="$wall" outer_wall_line_width="$wall" inner_wall_line_width="$wall" initial_layer_line_width="$wall" ;;
     *segment:normal | fit-test:normal)
       flatten process "$base" "$out" "$BED" brim_type=$brim_type brim_width=$brim_width \
-        wall_generator=arachne enable_support=0 enable_arc_fitting=0 ;;
+        wall_generator=arachne enable_support=0 enable_arc_fitting=0 elefant_foot_compensation=0 ;;
     base:normal)
       flatten process "$base" "$out" "$BED" brim_type=no_brim brim_width=0 wall_loops=4 \
         sparse_infill_density=20% sparse_infill_pattern=gyroid top_shell_layers=5 bottom_shell_layers=5 \
-        enable_support=1 "support_type=tree(auto)" support_on_build_plate_only=1 ;;
+        enable_support=1 "support_type=tree(auto)" support_on_build_plate_only=1 elefant_foot_compensation=0.15 ;;
     top-cover:normal)
       flatten process "$base" "$out" "$BED" brim_type=no_brim brim_width=0 wall_loops=3 \
-        sparse_infill_density=20% layer_height=0.2 enable_support=0 ;;
+        sparse_infill_density=20% layer_height=0.2 enable_support=0 elefant_foot_compensation=0.15 ;;
     *)
       flatten process "$base" "$out" "$BED" ;;
   esac

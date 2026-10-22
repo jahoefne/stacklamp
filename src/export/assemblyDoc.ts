@@ -22,6 +22,8 @@ export function assemblyMarkdown(input: DocInput): string {
   const p = req.params;
   const tube = p.core.kind === 'led-tube';
   const zone = dims.rod.stripZone;
+  /** How far the core reaches into the cover boss (core top − boss tip). */
+  const engagement = dims.rod.topZ - zone[1];
   const out: string[] = [];
   out.push('# stacklamp — assembly', '');
   if (req.meta.shareUrl) out.push(`Configuration: ${req.meta.shareUrl}`, '');
@@ -29,12 +31,18 @@ export function assemblyMarkdown(input: DocInput): string {
   out.push('## Hardware', '');
   const hw: string[] = [];
   hw.push(`- **Core:** ${rodLine(req, dims)}.`);
-  if (p.base.screwCount > 0) {
+  if (tube) {
+    hw.push(
+      p.base.screwCount > 0
+        ? `- **Hot glue** to fix the tube in the collar, or ${p.base.screwCount} × M4 nylon- or soft-tipped set screws (Ø ${num(p.base.screwDiameter)} mm holes), only hand-tight. Never drive bare metal screws against a mains LED tube: they can crack the housing or cut the insulation.`
+        : '- **Hot glue** to fix the tube in the collar.',
+    );
+  } else if (p.base.screwCount > 0) {
     hw.push(
       `- **${p.base.screwCount} × M4 screws** (8–10 mm set screws or self-tapping screws) for the collar holes (Ø ${num(p.base.screwDiameter)} mm), or a few dots of hot glue instead.`,
     );
   } else {
-    hw.push('- **Hot glue** (or epoxy) to fix the core in the collar.');
+    hw.push('- **Hot glue** (or epoxy) to fix the rod in the collar.');
   }
   hw.push(
     `- **Weight plate** Ø ${num(p.plate.od)} × ${num(p.plate.thickness)} mm with a ${num(p.plate.bore)} mm bore (a standard cast-iron dumbbell plate); it sits in the base's ${num(dims.base.pocketDiameter)} × ${num(dims.base.pocketDepth)} mm underside pocket and keeps the lamp from tipping.`,
@@ -75,13 +83,15 @@ export function assemblyMarkdown(input: DocInput): string {
   const steps: string[] = [
     `Press the weight plate into the pocket on the underside of the base. If it rattles, a few dots of hot glue or a strip of tape hold it.`,
     `Push the ${tube ? 'LED tube' : 'rod'} into the collar until it stands on the socket floor, ${num(p.base.socketBelowTop)} mm below the base top. ${
-      p.base.screwCount > 0
-        ? `Tighten the ${p.base.screwCount} screws (${num(dims.base.screwZ - dims.base.topZ)} mm above the base top) evenly so the ${tube ? 'tube' : 'rod'} stands upright.`
-        : 'Fix it with hot glue and hold it upright until the glue sets.'
+      tube
+        ? `Fix it with hot glue${p.base.screwCount > 0 ? ' (or the soft-tipped screws, hand-tight)' : ''} and hold it upright until the glue sets.`
+        : p.base.screwCount > 0
+          ? `Tighten the ${p.base.screwCount} screws (${num(dims.base.screwZ - dims.base.topZ)} mm above the base top) evenly so the rod stands upright.`
+          : 'Fix it with hot glue and hold it upright until the glue sets.'
     }`,
     tube
       ? `Route the tube's lead ${routing} before seating the tube.`
-      : `Wrap the LED strip around the rod from the collar top (${num(zone[0])} mm) up to ${num(zone[1])} mm, leaving the top ${num(p.cover.bossHeight)} mm free for the cover boss. Secure both ends.`,
+      : `Wrap the LED strip around the rod from the collar top (${num(zone[0])} mm) up to ${num(zone[1])} mm, where the cover boss begins: the top ${num(engagement)} mm of the rod slide into the boss and stay bare. Secure both ends.`,
     ...(tube ? [] : [`Route the strip's lead ${routing}. Connect it to the power supply outside the lamp.`]),
     `Stack the ${dims.inner.count} inner segments onto the inner ring of the base, foot (socket) down, in the colour order of PRINT-PLAN.md (band 1 at the bottom). Each foot slides over the rim below and sits on its 45° shoulder.`,
     `Stack the ${dims.outer.count} outer segments onto the outer ring the same way.`,
@@ -101,7 +111,9 @@ export function assemblyMarkdown(input: DocInput): string {
     );
   }
   safety.push(
-    '- **PETG softens at about 80 °C.** Keep the air intakes in the base and the slits in the cover open so warm air can rise through the stacks; use moderate strip power (aluminium rod as heat sink) and check after an hour that no part gets hot to the touch.',
+    tube
+      ? '- **PETG softens at about 80 °C.** Keep the air intakes in the base and the slits in the cover open so warm air can rise through the stacks, use a tube of moderate power and check after an hour that no part gets hot to the touch.'
+      : '- **PETG softens at about 80 °C.** Keep the air intakes in the base and the slits in the cover open so warm air can rise through the stacks; use moderate strip power (the aluminium rod works as a heat sink) and check after an hour that no part gets hot to the touch.',
     `- **Anchor the lamp against tipping.** It is ${num(dims.totalHeight / 1000, 2)} m tall on a ${num(p.base.diameter)} mm base: always use the weight plate, stand it on a level floor and keep it out of reach of small children and pets.`,
     '- The printed parts are not a structural load path: do not lift the lamp by the cover or the segments.',
   );

@@ -5,7 +5,8 @@
  */
 import { scoped, type Kernel, type Manifold, type Scope } from '../kernel';
 import { FIT_TEST_COPIES, type PartSpecs } from '../layout';
-import { toPartMesh, type MassModel } from '../mesh';
+import { printedBase, printedCover, printedSegment } from '../estimate';
+import { toPartMesh } from '../mesh';
 import { resolution, type Resolution } from '../quality';
 import type { PartId, PartMesh, Quality } from '../types';
 import { buildBase } from './base';
@@ -41,7 +42,21 @@ export function buildPart(k: Kernel, id: PartId, specs: PartSpecs, quality: Qual
   return scoped(k, (s) => s.keep(buildInScope(s, id, specs, resolution(quality))));
 }
 
-export const massModel = (id: PartId): MassModel => (id === 'base' || id === 'top-cover' ? 'solid' : 'vase');
+/** The printed-volume estimate of a part (see estimate.ts). */
+function printedVolume(s: Scope, id: PartId, specs: PartSpecs, res: Resolution): (volume: number) => number {
+  switch (id) {
+    case 'base':
+      return (v) => printedBase(s, v, specs.base, res.arcPerQuarter);
+    case 'top-cover':
+      return (v) => printedCover(s, v, specs.cover, Math.max(2, Math.round(res.arcPerQuarter / 2)), res.cutter);
+    case 'inner-segment':
+      return (v) => printedSegment(v, specs.inner);
+    case 'outer-segment':
+      return (v) => printedSegment(v, specs.outer);
+    case 'fit-test':
+      return (v) => printedSegment(v, specs.fitTest);
+  }
+}
 
 /** Copies of a part in the lamp (fit test: two rings to push together). */
 export function copiesOf(id: PartId, counts: { inner: number; outer: number }): number {
@@ -59,6 +74,6 @@ export function buildPartMesh(k: Kernel, id: PartId, specs: PartSpecs, quality: 
     const status = m.status();
     if (status !== 'NoError') throw new BuildError(`${id}: Manifold status ${status}`);
     if (m.isEmpty()) throw new BuildError(`${id}: the solid is empty`);
-    return toPartMesh(s, m, { id, quality, copies, normals: res.normals, mass: massModel(id) });
+    return toPartMesh(s, m, { id, quality, copies, normals: res.normals, printed: printedVolume(s, id, specs, res) });
   });
 }

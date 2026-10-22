@@ -139,7 +139,7 @@ describe.each(SAMPLES)('sample $name', (sample) => {
     );
     expect(Object.keys(files)).toEqual([...partNames, 'PRINT-PLAN.md', 'ASSEMBLY.md', 'config.json']);
     expect(fileName).toBe(
-      `stacklamp-L${num(sample.params.core.length)}-o${dims.outer.count}x${num(dims.outer.height)}-i${dims.inner.count}x${num(dims.inner.height)}.zip`,
+      `stacklamp-L${num(sample.params.core.length)}-D${num(sample.params.tubes.outerOD)}-${sample.params.core.kind === 'led-tube' ? 'tube' : 'rod'}-o${dims.outer.count}x${num(dims.outer.height)}-i${dims.inner.count}x${num(dims.inner.height)}.zip`,
     );
 
     // --- part files are well-formed

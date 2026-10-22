@@ -192,7 +192,7 @@ describe('WorkerGeometryClient with the real handler in-process', () => {
     expect(parts.map((p) => p.id)).toEqual(['base', 'inner-segment', 'outer-segment', 'top-cover']);
     const stages: ExportStage[] = [];
     const { zip, fileName } = await client.exportZip({ ...req, includeFitTest: true }, (s) => stages.push(s));
-    expect(fileName).toBe('stacklamp-L1500-o11x154.5-i11x154.3.zip');
+    expect(fileName).toBe('stacklamp-L1500-D200-rod-o11x154.5-i11x154.3.zip');
     expect(Object.keys(unzipSync(zip))).toHaveLength(8);
     expect(stages).toContain('fit-test');
     client.dispose();

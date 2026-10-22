@@ -92,7 +92,7 @@ describe('GeometryHandler', () => {
     expect(types.filter((t) => t === 'progress')).toHaveLength(8);
     expect(types.at(-1)).toBe('zip');
     const zip = posted.at(-1)!;
-    expect(zip.res).toMatchObject({ id: 2, fileName: 'stacklamp-L1500-o11x154.5-i11x154.3.zip' });
+    expect(zip.res).toMatchObject({ id: 2, fileName: 'stacklamp-L1500-D200-rod-o11x154.5-i11x154.3.zip' });
     expect(zip.transfer).toHaveLength(1);
     posted.length = 0;
     h.handle({ type: 'build', id: 3, params: { nonsense: true } as never, quality: 'preview' }, post);

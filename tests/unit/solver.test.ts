@@ -148,6 +148,22 @@ describe('locked mode', () => {
     expect(d.messages.map((m) => m.code)).toContain('led-tube-not-cuttable');
     close(d.rod.requiredLength, p.core.length);
   });
+  it('auto mode keeps segments within the Bambu X1C / P1S height (250 mm)', () => {
+    // 1420 mm rod, 250 mm targets: 6 × 252.2 mm would not fit a 250 mm build height
+    const p = withParams((q) => {
+      q.core.length = 1420;
+      q.segments.outerHeight = 250;
+      q.segments.innerHeight = 250;
+    });
+    expect(p.printer.bedZ).toBe(250);
+    const d = deriveDims(p);
+    expect(d.ok).toBe(true);
+    expect(d.outer.height).toBeLessThanOrEqual(249);
+    expect(d.inner.height).toBeLessThanOrEqual(249);
+    expect(d.outer.count).toBe(7);
+    expect(PRINTER_PRESETS['bambu-256'].bed).toEqual([256, 256, 250]);
+  });
+
   it('flags segments taller than the printer', () => {
     const p = withParams((q) => {
       q.segments.heightMode = 'locked';

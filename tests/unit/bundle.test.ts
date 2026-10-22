@@ -52,7 +52,7 @@ describe('export ZIP', () => {
       stages.push(s);
       expect(done).toBeLessThanOrEqual(total);
     });
-    expect(fileName).toBe('stacklamp-L1500-o11x154.5-i11x154.3.zip');
+    expect(fileName).toBe('stacklamp-L1500-D200-rod-o11x154.5-i11x154.3.zip');
     const files = unzipSync(zip);
     expect(Object.keys(files)).toEqual([
       'base.3mf',
@@ -117,6 +117,11 @@ describe('export ZIP', () => {
     expect(asm).toMatch(/mains voltage/);
     expect(asm).not.toMatch(/LED strip\*\*/);
     expect(asm).toMatch(/socket floor/);
+    // no metal set screws against a mains tube, no rod-as-heat-sink advice
+    expect(asm).not.toMatch(/M4 screws\*\*/);
+    expect(asm).toMatch(/Hot glue\*\*/);
+    expect(asm).toMatch(/Never drive bare metal screws/);
+    expect(asm).not.toMatch(/heat sink/);
   });
 
   it('locked mode states the cut length', () => {
@@ -139,6 +144,12 @@ describe('export ZIP', () => {
 
   it('file name formats heights compactly', () => {
     const p = withParams((q) => (q.core.length = 1234));
-    expect(bundleFileName({ params: p }, deriveDims(p))).toMatch(/^stacklamp-L1234-o\d+x[\d.]+-i\d+x[\d.]+\.zip$/);
+    expect(bundleFileName({ params: p }, deriveDims(p))).toMatch(/^stacklamp-L1234-D200-rod-o\d+x[\d.]+-i\d+x[\d.]+\.zip$/);
+    // lamps that differ only in tube diameter or core get different names
+    const names = new Set(
+      [defaultParams(), withParams((q) => (q.tubes.outerOD = 150)), ledTube()].map((q) => bundleFileName({ params: q }, deriveDims(q))),
+    );
+    expect(names.size).toBe(3);
+    expect(bundleFileName({ params: ledTube() }, deriveDims(ledTube()))).toContain('-D200-tube-');
   });
 });
