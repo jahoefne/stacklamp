@@ -59,6 +59,10 @@
   --stage-led: #FFD49A;          /* the LED core, ~3000 K warm white */
   --stage-part: #5C554E;         /* printed opaque parts: base and top cover */
   --stage-rod: #C9CDD2;          /* brushed aluminium rod (visible above / in exploded view) */
+  --stage-wall: #D9CDB8;         /* the room: wall paint (warm putty) */
+  --stage-wood: #8A5A32;         /* the room: teak furniture; the floor is this darkened */
+  --stage-fabric: #C98E2E;       /* the room: the lounge chair's mustard upholstery */
+  --stage-rug: #D3C09A;          /* the room: the rug's cream ground */
   --stage-glow-strength: 1.0;    /* multiplier for the additive band glow */
   --stage-bloom: 0.6;            /* bloom strength on the high quality tier */
   --stage-pool: #FFB86B;         /* optional: tint of the light pool on the floor */

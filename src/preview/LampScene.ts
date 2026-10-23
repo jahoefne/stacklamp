@@ -1,6 +1,6 @@
 /**
- * Imperative three.js scene of the lit lamp in a dark room. Owns its canvas, renders
- * on demand, adapts quality, and never touches React or the store.
+ * Imperative three.js scene of the lit lamp in a dusk-lit mid-century living room. Owns
+ * its canvas, renders on demand, adapts quality, and never touches React or the store.
  *
  * Frames: parts arrive in their print frame (mm, z-up); `root` rotates z-up → y-up and
  * scales mm → m; each part copy is a Group whose matrix is T(view offset) · placement.
@@ -9,6 +9,7 @@ import {
   AgXToneMapping,
   NeutralToneMapping,
   type BufferGeometry,
+  PCFShadowMap,
   Group,
   HalfFloatType,
   Mesh,
@@ -56,8 +57,15 @@ export const CAMERA_FOV = 30;
  */
 export const TONE_MAPPING: ToneMap = 'neutral';
 export const TONE_MAPPING_EXPOSURE = 1;
-export const BLOOM_RADIUS = 0.4;
-export const BLOOM_THRESHOLD = 0.75;
+/**
+ * Bloom is a tight halo around the glowing tubes, not a wash: the pass blurs at five
+ * scales and the coarse ones smear a tall bright column over the whole frame, which the
+ * dark stage hid and a lit room shows. Radius 0 keeps the fine levels at full weight;
+ * the per-level factors fade the coarse levels out almost entirely.
+ */
+export const BLOOM_RADIUS = 0;
+export const BLOOM_THRESHOLD = 0.8;
+export const BLOOM_LEVELS: readonly number[] = [1, 0.7, 0.35, 0.1, 0.03];
 export const CAMERA_TWEEN_MS = 450;
 // -----------------------------------------------------------------------------
 
@@ -168,14 +176,16 @@ export class LampScene {
     const toneMap = toneMapFromUrl() ?? TONE_MAPPING;
     this.renderer.toneMapping = toneMap === 'agx' ? AgXToneMapping : NeutralToneMapping;
     this.renderer.toneMappingExposure = TONE_MAPPING_EXPOSURE;
+    // Shadow maps render only while a light casts (the high tier, see applyTier()).
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFShadowMap;
     // Count draw calls per frame across all composer passes (reset in frame()).
     this.renderer.info.autoReset = false;
     host.appendChild(this.canvas);
 
-    // Stage
-    this.stage = new Stage(this.tokens, toneMap);
+    // The room and its lights
+    this.stage = new Stage(this.tokens, toneMap, { anisotropy: Math.min(8, this.renderer.capabilities.getMaxAnisotropy()) });
     this.scene.add(this.stage.group);
-    this.scene.fog = this.stage.fog;
     this.scene.environment = this.stage.createEnvironment(this.renderer);
     this.scene.environmentIntensity = ENVIRONMENT_INTENSITY;
 
@@ -308,6 +318,7 @@ export class LampScene {
       tier: this.qualityTier,
       glow: this.glow,
       bloom: this.composer !== null,
+      shadows: this.stage.shadows,
       pixelRatio: this.renderer.getPixelRatio(),
       size: [this.width, this.height],
       calls: info.render.calls,
@@ -381,7 +392,6 @@ export class LampScene {
     // 'change', which re-requests a frame (coalesced into the next rAF).
     if (this.controls.update()) animating = true;
     if (this.interacting) animating = true;
-    this.stage.updateFog(this.camera.position.distanceTo(this.controls.target));
     if (this.composer) this.composer.render();
     else this.renderer.render(this.scene, this.camera);
 
@@ -563,6 +573,7 @@ export class LampScene {
     this.composer?.setPixelRatio(this.renderer.getPixelRatio());
     this.composer?.setSize(this.width, this.height);
     this.core.setHdr(s.bloom);
+    this.stage.setShadows(s.shadows);
   }
 
   private dropToLowTier(): void {
@@ -578,6 +589,7 @@ export class LampScene {
     const composer = new EffectComposer(this.renderer, target);
     composer.addPass(new RenderPass(this.scene, this.camera));
     this.bloomPass = new UnrealBloomPass(new Vector2(this.width, this.height), this.tokens.bloom, BLOOM_RADIUS, BLOOM_THRESHOLD);
+    this.bloomPass.compositeMaterial.uniforms['bloomFactors']!.value = [...BLOOM_LEVELS];
     composer.addPass(this.bloomPass);
     composer.addPass(new OutputPass());
     this.composer = composer;

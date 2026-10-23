@@ -1,14 +1,17 @@
 /**
- * The dark room around the lamp (scene space: metres, y-up) and the light core
- * (lamp frame: mm, z-up, lives inside LampScene's root group).
+ * The room around the lamp (scene space: metres, y-up) with its lights, and the light
+ * core (lamp frame: mm, z-up, lives inside LampScene's root group).
+ *
+ * The lamp lights the room: three warm point lights sit on the LED zone, the middle one
+ * casts the shadows. A cool, low dusk light comes in through the window of the left wall
+ * (the wall casts a shadow, so the light reaches the floor only through the opening).
  */
 import {
   AdditiveBlending,
   BackSide,
-  CircleGeometry,
   Color,
   CylinderGeometry,
-  Fog,
+  DirectionalLight,
   Group,
   HemisphereLight,
   Mesh,
@@ -25,20 +28,27 @@ import {
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { CoreKind, DerivedDims } from '../geometry';
 import { createLedMaterial, createPartMaterial, createRodMaterial, LED_SLEEVE_HDR } from './materials';
+import { Room, RUG_Y } from './room';
 import type { StageTokens } from './stageTokens';
 import { hexToLinear, inverseToneMap, type ToneMap } from './tonemap';
 
 // ---- Tuning knobs -----------------------------------------------------------
-export const HEMI_INTENSITY = 0.15;
+export const HEMI_INTENSITY = 0.07;
+/** Dusk sky above, warm floor bounce below. */
+export const HEMI_SKY = '#6b7a99';
+export const HEMI_GROUND = '#3a2a1c';
 /** Candela per point light (three's physical units); three lights along the LED zone. */
-export const LED_LIGHT_INTENSITY = 0.4;
+export const LED_LIGHT_INTENSITY = 0.32;
+/** The dusk through the window: a low, cool directional light. */
+export const WINDOW_LIGHT = '#8fa6d4';
+export const WINDOW_LIGHT_INTENSITY = 0.9;
+/** Without shadows the window light would wash the whole left side, so it is only a hint. */
+export const WINDOW_LIGHT_INTENSITY_FLAT = 0.08;
 export const ENVIRONMENT_INTENSITY = 0.3;
-export const FLOOR_RADIUS_M = 40;
 export const POOL_RADIUS_M = 0.7;
-export const POOL_INTENSITY = 0.4;
-/** Fog starts this far behind the lamp and is opaque this far behind it (metres). */
-export const FOG_NEAR_BEHIND_M = 0.6;
-export const FOG_FAR_BEHIND_M = 6;
+export const POOL_INTENSITY = 0.35;
+export const POINT_SHADOW_SIZE = 1024;
+export const WINDOW_SHADOW_SIZE = 2048;
 // -----------------------------------------------------------------------------
 
 const poolVertex = /* glsl */ `
@@ -61,36 +71,39 @@ void main() {
 }
 `;
 
+export interface StageOptions {
+  /** Anisotropic filtering for the floor texture. */
+  anisotropy?: number | undefined;
+  /** false builds the room with flat colours (no canvas textures). */
+  textures?: boolean | undefined;
+}
+
 export class Stage {
-  /** Scene-space group: floor, light pool, background shell, lights. */
+  /** Scene-space group: room, light pool, background shell, lights. */
   readonly group = new Group();
-  readonly fog: Fog;
-  private readonly floor: Mesh<CircleGeometry, MeshStandardMaterial>;
+  readonly room: Room;
   private readonly pool: Mesh<PlaneGeometry, ShaderMaterial>;
   private readonly shell: Mesh<SphereGeometry, MeshBasicMaterial>;
   private readonly hemi: HemisphereLight;
   private readonly lights: PointLight[] = [];
+  private readonly window: DirectionalLight;
   private envTexture: Texture | null = null;
 
-  constructor(tokens: StageTokens, toneMap: ToneMap) {
-    // Background and fog go through the tone mapper like everything else; the
-    // inverse keeps the on-screen colour equal to --stage-bg in both render paths.
+  constructor(tokens: StageTokens, toneMap: ToneMap, opts: StageOptions = {}) {
+    // The background goes through the tone mapper like everything else; the inverse keeps
+    // the on-screen colour equal to --stage-bg in both render paths. It shows outside the
+    // room (the walls are single-sided), i.e. when the camera orbits out through a wall.
     const bgLinear = inverseToneMap(toneMap, hexToLinear(tokens.bg));
     const bg = new Color().setRGB(bgLinear[0], bgLinear[1], bgLinear[2]);
-    this.fog = new Fog(bg, 4, 10);
-
-    this.shell = new Mesh(
-      new SphereGeometry(90, 16, 8),
-      new MeshBasicMaterial({ color: bg, side: BackSide, fog: false, depthWrite: false }),
-    );
+    this.shell = new Mesh(new SphereGeometry(90, 16, 8), new MeshBasicMaterial({ color: bg, side: BackSide, fog: false, depthWrite: false }));
     this.shell.renderOrder = -10;
     this.shell.frustumCulled = false;
 
-    const floorMat = createPartMaterial(tokens.floor);
-    floorMat.name = 'floor';
-    floorMat.roughness = 0.9;
-    this.floor = new Mesh(new CircleGeometry(FLOOR_RADIUS_M, 96), floorMat);
-    this.floor.rotation.x = -Math.PI / 2;
+    this.room = new Room({
+      colours: { wall: tokens.wall, wood: tokens.wood, fabric: tokens.fabric, rug: tokens.rug },
+      anisotropy: opts.anisotropy,
+      textures: opts.textures,
+    });
 
     this.pool = new Mesh(
       new PlaneGeometry(POOL_RADIUS_M * 2, POOL_RADIUS_M * 2),
@@ -106,19 +119,39 @@ export class Stage {
       }),
     );
     this.pool.rotation.x = -Math.PI / 2;
-    this.pool.position.y = 0.0015;
+    this.pool.position.y = RUG_Y + 0.002;
     this.pool.renderOrder = 4;
 
-    this.hemi = new HemisphereLight(0xffffff, new Color(tokens.floor), HEMI_INTENSITY);
+    this.hemi = new HemisphereLight(new Color(HEMI_SKY), new Color(HEMI_GROUND), HEMI_INTENSITY);
     for (let i = 0; i < 3; i++) {
       const l = new PointLight(new Color(tokens.led), LED_LIGHT_INTENSITY, 0, 2);
       this.lights.push(l);
     }
+    const caster = this.lights[1]!;
+    caster.shadow.mapSize.set(POINT_SHADOW_SIZE, POINT_SHADOW_SIZE);
+    caster.shadow.bias = -0.003;
+    caster.shadow.camera.near = 0.15;
+    caster.shadow.camera.far = 12;
     this.setLedZone(80, 1500);
-    this.group.add(this.shell, this.floor, this.pool, this.hemi, ...this.lights);
+
+    this.window = new DirectionalLight(new Color(WINDOW_LIGHT), WINDOW_LIGHT_INTENSITY_FLAT);
+    this.window.position.set(-6, 3.2, 1.2);
+    this.window.shadow.mapSize.set(WINDOW_SHADOW_SIZE, WINDOW_SHADOW_SIZE);
+    const cam = this.window.shadow.camera;
+    cam.left = -4.5;
+    cam.right = 4.5;
+    cam.top = 4.5;
+    cam.bottom = -4.5;
+    cam.near = 1;
+    cam.far = 16;
+    this.window.shadow.bias = -0.0005;
+    this.window.shadow.normalBias = 0.02;
+    this.window.shadow.radius = 3;
+
+    this.group.add(this.shell, this.room.group, this.pool, this.hemi, ...this.lights, this.window, this.window.target);
   }
 
-  /** Low-intensity RoomEnvironment reflections for the sheen, rod and parts. */
+  /** Low-intensity RoomEnvironment reflections for the sheen, rod, floor and brass. */
   createEnvironment(renderer: WebGLRenderer): Texture {
     const pmrem = new PMREMGenerator(renderer);
     const room = new RoomEnvironment();
@@ -135,23 +168,33 @@ export class Stage {
     this.lights.forEach((l, i) => l.position.set(0, (lo + ((2 * i + 1) / 6) * (hi - lo)) / 1000, 0));
   }
 
-  /** Colour of the light spilling onto the floor (linear, pre-multiplied by strength). */
+  /** Colour of the light spilling onto the rug (linear, pre-multiplied by strength). */
   setPoolTint(color: Color): void {
     this.pool.material.uniforms.uColor!.value = color;
   }
 
-  /** Keeps the fog band just behind the lamp whatever the zoom. */
-  updateFog(cameraDistance: number): void {
-    this.fog.near = cameraDistance + FOG_NEAR_BEHIND_M;
-    this.fog.far = cameraDistance + FOG_FAR_BEHIND_M;
+  /**
+   * Shadow maps on or off (the high quality tier). Off, the window light drops to a hint:
+   * without the wall's shadow it would wash the whole left side of the room.
+   */
+  setShadows(on: boolean): void {
+    this.lights[1]!.castShadow = on;
+    this.window.castShadow = on;
+    this.window.intensity = on ? WINDOW_LIGHT_INTENSITY : WINDOW_LIGHT_INTENSITY_FLAT;
+  }
+
+  get shadows(): boolean {
+    return this.window.castShadow;
   }
 
   dispose(): void {
-    for (const m of [this.floor, this.pool, this.shell]) {
+    for (const m of [this.pool, this.shell]) {
       m.geometry.dispose();
       m.material.dispose();
     }
+    this.room.dispose();
     this.lights.forEach((l) => l.dispose());
+    this.window.dispose();
     this.hemi.dispose();
     this.envTexture?.dispose();
     this.envTexture = null;

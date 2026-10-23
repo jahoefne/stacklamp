@@ -73,14 +73,16 @@ export function initialTier(glow: GlowMode, hints: DeviceHints): QualityTier {
 export interface TierSettings {
   bloom: boolean;
   maxPixelRatio: number;
+  /** Shadow maps in the room: the lamp's light on the furniture, the dusk through the window. */
+  shadows: boolean;
 }
 
 /**
- * Concrete renderer settings. 'off' keeps the sharp pixel ratio (without bloom the
- * scene is cheap); the low tier of 'auto' is the reduced-cost fallback.
+ * Concrete renderer settings. 'off' keeps the sharp pixel ratio and the shadows (without
+ * bloom the scene is cheap); the low tier of 'auto' is the reduced-cost fallback.
  */
 export function tierSettings(glow: GlowMode, tier: QualityTier): TierSettings {
-  if (glow === 'on') return { bloom: true, maxPixelRatio: 2 };
-  if (glow === 'off') return { bloom: false, maxPixelRatio: 2 };
-  return tier === 'high' ? { bloom: true, maxPixelRatio: 2 } : { bloom: false, maxPixelRatio: 1 };
+  if (glow === 'on') return { bloom: true, maxPixelRatio: 2, shadows: true };
+  if (glow === 'off') return { bloom: false, maxPixelRatio: 2, shadows: true };
+  return tier === 'high' ? { bloom: true, maxPixelRatio: 2, shadows: true } : { bloom: false, maxPixelRatio: 1, shadows: false };
 }

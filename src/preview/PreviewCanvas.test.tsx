@@ -12,6 +12,13 @@ const gl = vi.hoisted(() => ({ available: false, scenes: [] as unknown[] }));
 
 vi.mock('./webgl', () => ({ isWebGLAvailable: () => gl.available, isWebGLForcedOff: () => !gl.available, resetWebGLProbe: () => {} }));
 
+// jsdom has no 2D canvas either: the room is built with flat colours instead of textures.
+vi.mock('./roomTextures', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('./roomTextures')>();
+  const none = () => null;
+  return { ...mod, woodTexture: none, rugTexture: none, artTexture: none, skyTexture: none };
+});
+
 // jsdom has no WebGL: a renderer that records the scenes it is asked to draw, and an
 // environment generator that skips the GPU. Everything else is real three.js.
 vi.mock('three', async (importOriginal) => {
@@ -22,6 +29,8 @@ vi.mock('three', async (importOriginal) => {
     toneMapping = 0;
     toneMappingExposure = 1;
     info = { autoReset: true, render: { calls: 0, triangles: 0 }, memory: { geometries: 0 }, programs: [], reset: () => {} };
+    shadowMap = { enabled: false, type: 0 };
+    capabilities = { getMaxAnisotropy: () => 1 };
     private pixelRatio = 1;
     constructor(opts: { canvas: HTMLCanvasElement }) {
       this.domElement = opts.canvas;

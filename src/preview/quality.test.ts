@@ -47,9 +47,10 @@ describe('adaptive quality', () => {
     expect(initialTier('auto', { coarsePointer: false, cores: 2 })).toBe('high');
     expect(initialTier('auto', { coarsePointer: true, cores: 4 })).toBe('low');
     expect(initialTier('auto', { coarsePointer: true, cores: 8, memoryGb: 8 })).toBe('high');
-    expect(tierSettings('auto', 'high')).toEqual({ bloom: true, maxPixelRatio: 2 });
-    expect(tierSettings('auto', 'low')).toEqual({ bloom: false, maxPixelRatio: 1 });
-    expect(tierSettings('off', 'high').bloom).toBe(false);
+    expect(tierSettings('auto', 'high')).toEqual({ bloom: true, maxPixelRatio: 2, shadows: true });
+    expect(tierSettings('auto', 'low')).toEqual({ bloom: false, maxPixelRatio: 1, shadows: false });
+    expect(tierSettings('off', 'high')).toEqual({ bloom: false, maxPixelRatio: 2, shadows: true });
+    expect(tierSettings('on', 'low')).toEqual({ bloom: true, maxPixelRatio: 2, shadows: true });
   });
 });
 

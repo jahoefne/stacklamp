@@ -4,7 +4,7 @@
 
 **Configure and download: https://jahoefne.github.io/stacklamp/**
 
-Everything runs in your browser: the geometry is generated with [Manifold](https://github.com/elalish/manifold) (WASM), previewed with three.js, and written out as 3MF or STL. No backend, no account; your lamp lives in the URL, so a link is a saved design.
+Everything runs in your browser: the geometry is generated with [Manifold](https://github.com/elalish/manifold) (WASM), previewed with three.js standing in a small mid-century living room, and written out as 3MF or STL. No backend, no account; your lamp lives in the URL, so a link is a saved design.
 
 ## What you get
 
@@ -53,7 +53,7 @@ src/geometry   parameters, height solver, revolved profiles, Manifold builders, 
 src/export     binary STL, minimal 3MF, PRINT-PLAN / ASSEMBLY / config.json, ZIP bundle (fflate)
 src/worker     geometry worker (the only place the WASM is loaded), handler with a mesh cache, coalescing client
 src/state      zustand store, URL-hash codec, localStorage mirror, presets, colour generators, services
-src/preview    three.js scene: additive glow bands, dark stage, view modes, WebGL fallback
+src/preview    three.js scene: additive glow bands, a mid-century room at dusk lit by the lamp, view modes, WebGL fallback
 src/ui         design tokens (DESIGN.md), primitives, configurator sections, illustrations
 src/app        page shell and wiring
 tests/unit     engine tests (golden solver values, interference checks, manifoldness, export round-trips)

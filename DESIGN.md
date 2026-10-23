@@ -674,36 +674,59 @@ Buttons are verbs. Say "rings" or "segments" consistently: "segment" in tables a
 
 ## 12. 3D stage art direction
 
-The stage is a dark gallery box: the only dark surface on the page, square corners, no border
-(on paper the dark block is its own edge). Desktop: inset in the grid, sticky. Mobile: full bleed.
+The stage is the dark box on the page: square corners, no border (on paper the dark block is
+its own edge). Desktop: inset in the grid, sticky. Mobile: full bleed. Inside it the lamp
+stands in a mid-century living room at dusk, lit by its own light.
 
 | Token | Value | Meaning |
 |---|---|---|
-| `--stage-bg` | `#110F12` | renderer clear colour and container background (warm violet-black) |
-| `--stage-floor` | `#1A1715` | floor disc, a touch lighter than the background so it reads |
+| `--stage-bg` | `#110F12` | renderer clear colour and container background; shows outside the room when the camera orbits out through a wall |
+| `--stage-floor` | `#1A1715` | kept for the schematic fallback's ground |
 | `--stage-led` | `#FFD49A` | LED core light, about 3000 K; also the point-light colour |
 | `--stage-part` | `#5C554E` | printed opaque parts (base, top cover): warm graphite, present but not competing |
 | `--stage-rod` | `#C9CDD2` | brushed aluminium (visible in exploded/inner views) |
+| `--stage-wall` | `#D9CDB8` | the room's wall paint, a warm putty |
+| `--stage-wood` | `#8A5A32` | teak of the credenza, chair frame and side table; the plank floor is the same colour darkened |
+| `--stage-fabric` | `#C98E2E` | the lounge chair's mustard upholstery |
+| `--stage-rug` | `#D3C09A` | the rug's cream ground (its rust, teal and ochre pattern is fixed) |
 | `--stage-glow-strength` | `1.0` | multiplier of the additive band glow |
 | `--stage-bloom` | `0.6` | bloom strength, high tier only |
-| `--stage-pool` | `#FFB86B` | optional: light pool on the floor (tint it towards the bottom band if cheap) |
+| `--stage-pool` | `#FFB86B` | optional: light pool on the rug (tinted towards the bottom band) |
 | `--stage-sheen` | `#FFFFFF` | optional: specular sheen of the PETG |
 | `--stage-ink` / `--stage-line` | `#F4EEE1` / `#4A433C` | overlay text/icons and overlay borders |
 
 Read them once at mount with `getComputedStyle(document.documentElement).getPropertyValue(name).trim()`.
 
-- **Camera:** 30–35° vertical FOV, lamp fills ~85 % of the stage height, eye height slightly below
-  the lamp's middle (looking a little up, like standing in a room), 15° off-axis. No auto-rotation.
-- **Light:** the bands are the light. Glow is additive in the band colour, strongest at grazing
-  angles (rim), so each ring reads as a glowing edge with a soft body. Clear bands are the
-  brightest, Smoke the dimmest; never boost dark colours to equal brightness.
+- **The room** (`src/preview/room.ts`): the lamp stands 1.3 m in front of the back wall, near the
+  left wall, which holds a window onto a dusk sky between two ochre curtains. Behind-left a teak
+  credenza with a teal vase, a bowl and books, a framed abstract print above it; a rubber plant
+  in the corner; behind-right a lounge chair in mustard with a round side table, and a brass
+  sunburst clock on the wall; a geometric rug under the lamp. Everything is primitives and canvas
+  textures (planks, rug, print, sky), nothing downloaded: about forty draw calls. Furniture stays
+  low and against the walls, so the lamp is never hidden from an orbit angle inside the room.
+  Walls, floor and ceiling are single-sided and face inward: a camera that orbits out through a
+  wall sees the room as a dollhouse on the dark stage, never a black wall.
+- **Camera:** 30° vertical FOV, lamp fills ~85 % of the stage height, eye height slightly below
+  the lamp's middle (looking a little up, like standing in a room), 35° off-axis so the back
+  wall, the credenza and the room corner make the backdrop. No auto-rotation.
+- **Light:** the lamp is the light. Three warm point lights on the LED zone light the room, the
+  middle one casts the shadows; a low, cool dusk light comes in through the window (the left
+  wall casts a shadow, so it reaches the floor only through the opening) and gives the lamp's
+  left side a cool rim. A faint blue-over-warm hemisphere fills the corners. Evening levels:
+  the wall behind the lamp sits around 40 % grey so the glow still reads against it.
+- **Glow:** additive in the band colour, strongest at grazing angles (rim), so each ring reads
+  as a glowing edge with a soft body. Clear bands are the brightest, Smoke the dimmest; never
+  boost dark colours to equal brightness.
 - **Sheen:** a thin specular highlight (opacity ~0.12) so the tubes read as plastic, not neon.
-- **Parts:** base and cover in `--stage-part`, matte (roughness ~0.8), lit by the warm point
-  lights and the pool, never pure black.
-- **Floor:** disc in `--stage-floor`, additive light pool around the base in `--stage-pool`,
-  fading to nothing well inside the disc edge, no visible grid.
-- **Bloom:** subtle, high tier only, threshold so only the glow blooms (not the parts).
-- **Exploded view:** gaps equal to ~40 % of the pitch, parts keep their glow.
+- **Parts:** base and cover in `--stage-part`, matte, lit by the warm point lights, never pure black.
+- **Bloom:** subtle, high tier only, threshold so only the glow blooms (not the lit wall), and
+  *tight*: the pass's coarse blur levels are faded out so the halo stays around the tubes
+  instead of washing the room.
+- **Quality tiers:** high = bloom + shadow maps at pixel ratio ≤ 2; the low tier of "auto"
+  drops both and renders at pixel ratio 1 (the dusk light then becomes a hint, since without
+  the wall's shadow it would light the whole left side). "Glow off" keeps the shadows.
+- **Exploded view:** gaps equal to ~40 % of the pitch, parts keep their glow, the outer stack
+  steps aside on the rug.
 - **Fallback (no WebGL or chunk failed):** the same dark box with
   `StackIllustration variant="schematic"` centred, `color: var(--stage-ink)`, and the stage hint
   replaced by the WebGL fallback sentence.

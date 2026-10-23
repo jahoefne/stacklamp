@@ -13,6 +13,11 @@ export interface StageTokens {
   /** Opaque printed parts: base and cover. */
   part: string;
   rod: string;
+  /** The room: wall paint, the wood of floor and furniture, the chair's upholstery, the rug's ground. */
+  wall: string;
+  wood: string;
+  fabric: string;
+  rug: string;
   /** Global multiplier of the band glow. */
   glowStrength: number;
   /** UnrealBloomPass strength (high tier). */
@@ -25,6 +30,10 @@ export const STAGE_FALLBACK: Readonly<StageTokens> = {
   led: '#ffc47e',
   part: '#d9d3ca',
   rod: '#c3c7cd',
+  wall: '#d9cdb8',
+  wood: '#8a5a32',
+  fabric: '#c98e2e',
+  rug: '#d3c09a',
   glowStrength: 1,
   bloom: 0.6,
 };
@@ -84,6 +93,10 @@ export function readStageTokens(el?: Element): StageTokens {
     out.led = colour('--stage-led', out.led);
     out.part = colour('--stage-part', out.part);
     out.rod = colour('--stage-rod', out.rod);
+    out.wall = colour('--stage-wall', out.wall);
+    out.wood = colour('--stage-wood', out.wood);
+    out.fabric = colour('--stage-fabric', out.fabric);
+    out.rug = colour('--stage-rug', out.rug);
     out.glowStrength = num(get('--stage-glow-strength'), out.glowStrength);
     out.bloom = num(get('--stage-bloom'), out.bloom);
   } catch {
