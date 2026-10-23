@@ -13,6 +13,8 @@ export class ProfileError extends Error {
 }
 
 const EPS = 1e-9;
+/** Edge bounding boxes grow by this much before the pair test, so touching edges are still tested. */
+const BOX_MARGIN = 1e-6;
 
 /**
  * Points on a circular arc around (cr, cz), from angle a0 to a1 (radians,
@@ -98,15 +100,35 @@ export function profileProblem(points: readonly Pt[]): string | null {
     if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1e-7) return `repeated point at (${a[0].toFixed(3)}, ${a[1].toFixed(3)})`;
   }
   if (signedArea(points) <= 0) return 'not counter-clockwise (area <= 0)';
+  // Non-adjacent edges must not cross. A profile with sampled arcs (a segment
+  // form) has a few hundred edges, and the exact test on every pair would
+  // dominate deriveDims, so the edges are swept in order of their lowest z and
+  // only pairs whose boxes overlap are tested exactly.
+  const rLo = new Float64Array(n);
+  const rHi = new Float64Array(n);
+  const zLo = new Float64Array(n);
+  const zHi = new Float64Array(n);
   for (let i = 0; i < n; i++) {
-    const a1 = points[i]!;
-    const a2 = points[(i + 1) % n]!;
-    for (let j = i + 1; j < n; j++) {
+    const [r0, z0] = points[i]!;
+    const [r1, z1] = points[(i + 1) % n]!;
+    rLo[i] = Math.min(r0, r1) - BOX_MARGIN;
+    rHi[i] = Math.max(r0, r1) + BOX_MARGIN;
+    zLo[i] = Math.min(z0, z1) - BOX_MARGIN;
+    zHi[i] = Math.max(z0, z1) + BOX_MARGIN;
+  }
+  const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => zLo[a]! - zLo[b]!);
+  for (let s = 0; s < n; s++) {
+    const a = order[s]!;
+    for (let t = s + 1; t < n; t++) {
+      const b = order[t]!;
+      if (zLo[b]! > zHi[a]!) break;
+      if (rLo[a]! > rHi[b]! || rLo[b]! > rHi[a]!) continue;
+      const i = Math.min(a, b);
+      const j = Math.max(a, b);
       // skip adjacent edges (they share a vertex)
       if (j === i + 1 || (i === 0 && j === n - 1)) continue;
-      const b1 = points[j]!;
-      const b2 = points[(j + 1) % n]!;
-      if (segmentsIntersect(a1, a2, b1, b2)) {
+      const a1 = points[i]!;
+      if (segmentsIntersect(a1, points[(i + 1) % n]!, points[j]!, points[(j + 1) % n]!)) {
         return `edges ${i} and ${j} intersect near (${a1[0].toFixed(2)}, ${a1[1].toFixed(2)})`;
       }
     }

@@ -14,6 +14,12 @@ import type { LampParams } from '../../src/geometry/types';
 import { CASES, ledTube, withNozzle, withParams } from '../helpers/params';
 
 const caseParams = (name: string): LampParams => structuredClone(CASES.find((c) => c.name === name)!.params);
+/**
+ * The contract's budget (< 1 ms on an M-series laptop, where the forms case measures
+ * ≈ 0.2 ms). GitHub's runners are several times slower and time-share with other test
+ * forks, so they get a looser bound that still catches a regression of that size.
+ */
+const DERIVE_BUDGET_MS = process.env.CI ? 2.5 : 1;
 
 const codes = (p: LampParams) => deriveDims(p).messages.map((m) => m.code);
 
@@ -309,7 +315,7 @@ describe('segment forms', () => {
     for (let i = 0; i < n; i++) deriveDims(p);
     const ms = (performance.now() - t0) / n;
     console.log(`deriveDims with forms: ${ms.toFixed(3)} ms per call`);
-    expect(ms).toBeLessThan(1);
+    expect(ms).toBeLessThan(DERIVE_BUDGET_MS);
   });
 });
 
@@ -385,7 +391,7 @@ describe('robustness', () => {
     for (let i = 0; i < n; i++) deriveDims(p);
     const ms = (performance.now() - t0) / n;
     console.log(`deriveDims: ${ms.toFixed(3)} ms per call`);
-    expect(ms).toBeLessThan(1);
+    expect(ms).toBeLessThan(DERIVE_BUDGET_MS);
   });
 });
 
