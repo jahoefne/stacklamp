@@ -2,8 +2,8 @@
  * The persisted lamp configuration (what the URL hash encodes) and the per-viewer UI
  * preferences (localStorage only). Pure data + factories.
  */
-import { defaultParams, deriveDims } from '../geometry';
-import type { LampParams, PetgColour } from '../geometry';
+import { defaultParams, deriveDims, isFormId } from '../geometry';
+import type { FormId, LampParams, PetgColour } from '../geometry';
 import { generateBands, normalizeSpec } from './generators';
 import { defaultPalette } from './palette';
 
@@ -61,6 +61,8 @@ export interface UiPrefs {
   genTarget: GenTarget;
   tuningOpen: boolean;
   glow: GlowMode;
+  /** Active form for the segment-forms editor. */
+  formBrush: FormId;
 }
 
 export const DEFAULT_OUTER_GEN: Readonly<GeneratorSpec> = Object.freeze({
@@ -96,6 +98,7 @@ export function defaultUiPrefs(): UiPrefs {
     genTarget: 'outer',
     tuningOpen: false,
     glow: 'auto',
+    formBrush: 'ball',
   };
 }
 
@@ -119,6 +122,7 @@ export function normalizeUi(raw: unknown, palette: readonly PetgColour[], base: 
     genTarget: oneOf(r.genTarget, ['inner', 'outer', 'both'], base.genTarget),
     tuningOpen: bool(r.tuningOpen, base.tuningOpen),
     glow: oneOf(r.glow, ['auto', 'on', 'off'], base.glow),
+    formBrush: isFormId(r.formBrush) ? r.formBrush : base.formBrush,
   };
   return fixUiColourRefs(ui, palette);
 }

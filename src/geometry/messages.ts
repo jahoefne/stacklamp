@@ -25,7 +25,10 @@ export const MESSAGE_CODES = {
   'screw-vs-collar': 'error',
   'invalid-number': 'error',
   'out-of-range': 'error',
+  'form-too-wide': 'error',
+  'form-too-narrow': 'error',
   // warnings
+  'form-squeezed': 'warning',
   'segment-deviation': 'warning',
   'inner-height-adjusted': 'warning',
   'inner-slits-dropped': 'warning',

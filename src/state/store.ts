@@ -6,11 +6,22 @@
  */
 import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
-import { CORE_PRESETS, NOZZLES, PRINTER_PRESETS, defaultParams, getParam, setParam as setParamValue } from '../geometry';
+import {
+  CORE_PRESETS,
+  NOZZLES,
+  PRINTER_PRESETS,
+  defaultParams,
+  fitForms,
+  formsEqual,
+  getParam,
+  isFormId,
+  setParam as setParamValue,
+} from '../geometry';
 import type {
   CoreKind,
   EnumParamPath,
   ExportStage,
+  FormId,
   HeightMode,
   LampParams,
   NozzleId,
@@ -76,6 +87,14 @@ export interface LampActions {
   setHeightMode(mode: HeightMode): void;
   /** Paint band `index` (0 = bottom) of `stack` with `colourId` (default: ui.brush). Clears that stack's generator. */
   paintBand(stack: Stack, index: number, colourId?: string): void;
+  /**
+   * Give band `index` (0 = bottom) of `stack` the body form `form` (default: ui.formBrush).
+   * Materialises the stored list to the current N first (bands beyond N survive).
+   */
+  paintForm(stack: Stack, index: number, form?: FormId): void;
+  /** Replace a stack's stored form list (bottom → top; any length, fitted to N by the engine). */
+  setForms(stack: Stack, forms: readonly FormId[]): void;
+  setFormBrush(form: FormId): void;
   /** Run a generator over ui.mix on ui.genTarget, fitted to the current N. Random gets a fresh seed ('both': outer = seed + 1). */
   applyGenerator(kind: GeneratorKind): void;
   /** On ui.genTarget: toggles `mirrored` on generator-driven stacks; reflects painted stacks about the middle. */
@@ -153,7 +172,8 @@ function sameParams(a: LampParams, b: LampParams): boolean {
   if (a === b) return true;
   return (
     PARAM_SPECS.every((s) => getParam(a, s.path) === getParam(b, s.path)) &&
-    ENUM_PATHS.every((p) => getEnumParam(a, p) === getEnumParam(b, p))
+    ENUM_PATHS.every((p) => getEnumParam(a, p) === getEnumParam(b, p)) &&
+    STACKS.every((stack) => formsEqual(a.forms[stack], b.forms[stack]))
   );
 }
 
@@ -248,6 +268,27 @@ export function createLampStore(init: LampStoreInit = {}) {
           const s = get();
           const n = selectDims(s)[stack].count;
           setConfig(paintBandPure(s.config, stack, index, colourId ?? s.ui.brush, n));
+        },
+        paintForm(stack, index, form) {
+          const s = get();
+          const f = form ?? s.ui.formBrush;
+          const n = selectDims(s)[stack].count;
+          if (!isFormId(f) || !Number.isInteger(index) || index < 0 || index >= n) return;
+          const stored = s.config.params.forms[stack];
+          const fitted = fitForms(stored, n);
+          if (fitted[index] === f) return;
+          const next = [...fitted, ...stored.slice(n)];
+          next[index] = f;
+          actions.setForms(stack, next);
+        },
+        setForms(stack, forms) {
+          const p = get().config.params;
+          const clean = forms.filter(isFormId);
+          setParams({ ...p, forms: { ...p.forms, [stack]: clean } });
+        },
+        setFormBrush(form) {
+          const { ui } = get();
+          if (ui.formBrush !== form && isFormId(form)) set({ ui: { ...ui, formBrush: form } });
         },
         applyGenerator(kind) {
           const s = get();

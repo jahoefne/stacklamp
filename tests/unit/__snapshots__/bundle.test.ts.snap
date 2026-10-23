@@ -176,7 +176,9 @@ exports[`export ZIP > documents (snapshot) > config.json 1`] = `
     },
     "tubes": {
       "innerOD": 60,
-      "outerOD": 200
+      "outerOD": 200,
+      "innerFormOD": 90,
+      "outerFormOD": 240
     },
     "segments": {
       "wall": 0.8,
@@ -185,7 +187,8 @@ exports[`export ZIP > documents (snapshot) > config.json 1`] = `
       "heightMode": "auto",
       "innerHeight": 150,
       "outerHeight": 150,
-      "maxDeviation": 0.1
+      "maxDeviation": 0.1,
+      "maxOverhang": 45
     },
     "base": {
       "diameter": 240,
@@ -233,6 +236,10 @@ exports[`export ZIP > documents (snapshot) > config.json 1`] = `
       "core": 0.3,
       "plateRadial": 1.5,
       "plateDepth": 1
+    },
+    "forms": {
+      "inner": [],
+      "outer": []
     }
   },
   "colourPlan": {

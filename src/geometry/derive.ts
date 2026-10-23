@@ -23,7 +23,7 @@ import { clampProfile } from './profiles/clamp';
 import { coverProfile } from './profiles/cover';
 import { segmentProfile } from './profiles/segment';
 import { BED_Z_MARGIN, INNER_GAP_RANGE, ROD_GAP_SLACK, type StackSolution } from './solver';
-import type { DerivedDims, LampParams, Message, PartId, SegmentDims } from './types';
+import type { DerivedDims, FormId, LampParams, Message, PartId, SegmentDims } from './types';
 import { ASSEMBLY_PART_IDS, PART_IDS } from './types';
 
 export interface Derivation {
@@ -67,8 +67,16 @@ export function derive(p: LampParams): Derivation {
   }
 }
 
-function segmentDims(sol: StackSolution, spec: SegmentSpec, stackBottomZ: number, zt: number, ringHeight: number): SegmentDims {
+function segmentDims(
+  sol: StackSolution,
+  spec: SegmentSpec,
+  forms: FormId[],
+  stackBottomZ: number,
+  zt: number,
+  ringHeight: number,
+): SegmentDims {
   const { count, height, pitch } = sol.fit;
+  const socket = socketOD(spec);
   return {
     count,
     height,
@@ -76,9 +84,12 @@ function segmentDims(sol: StackSolution, spec: SegmentSpec, stackBottomZ: number
     deviation: sol.targetHeight > 0 ? height / sol.targetHeight - 1 : 0,
     pitch,
     D: spec.D,
-    socketOD: socketOD(spec),
+    socketOD: socket,
     stackBottomZ,
     topZ: zt + ringHeight + count * pitch,
+    forms,
+    // The form envelopes (profiles/forms.ts) widen this once the forms are built.
+    maxOD: socket,
   };
 }
 
@@ -94,8 +105,8 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
   const stackBottomZ = zt + p.base.footGap;
   const isTube = p.core.kind === 'led-tube';
 
-  const outer = segmentDims(solved.outer, specs.outer, stackBottomZ, zt, ringHeight);
-  const inner = segmentDims(solved.inner, specs.inner, stackBottomZ, zt, ringHeight);
+  const outer = segmentDims(solved.outer, specs.outer, layout.forms.outer, stackBottomZ, zt, ringHeight);
+  const inner = segmentDims(solved.inner, specs.inner, layout.forms.inner, stackBottomZ, zt, ringHeight);
 
   // ------------------------------------------------------------ stacks
   const Pmin = window.Hmin - seatZ;
@@ -402,8 +413,8 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
   const clampOD = 2 * specs.clamp.radius;
   const sizes: Record<PartId, [number, number, number]> = {
     base: [2 * R, 2 * R, zt + p.base.collarHeight],
-    'inner-segment': [inner.socketOD, inner.socketOD, inner.height],
-    'outer-segment': [outer.socketOD, outer.socketOD, outer.height],
+    'inner-segment': [inner.maxOD, inner.maxOD, inner.height],
+    'outer-segment': [outer.maxOD, outer.maxOD, outer.height],
     'top-cover': [coverOD, coverOD, coverPrintHeight(cs)],
     'plate-clamp': [clampOD, clampOD, specs.clamp.thickness],
     'fit-test': [outer.socketOD, outer.socketOD, seatZ + FIT_TEST_EXTRA],
@@ -517,6 +528,8 @@ function failedDims(p: LampParams, error: Message): DerivedDims {
     socketOD: num(D),
     stackBottomZ: 0,
     topZ: 0,
+    forms: [],
+    maxOD: num(D),
   });
   const fit = {} as DerivedDims['fit'];
   for (const id of PART_IDS) fit[id] = { size: [0, 0, 0], fitsBed: false, fitsZ: false };

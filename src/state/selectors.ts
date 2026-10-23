@@ -4,7 +4,7 @@
  * does not produce new fitted bands). Safe to pass straight to `useLamp`.
  */
 import { computeBom, deriveDims, partsKey } from '../geometry';
-import type { Bom, ColourPlan, DerivedDims, LampParams, Message, PartMesh, PetgColour } from '../geometry';
+import type { Bom, ColourPlan, DerivedDims, FormId, LampParams, Message, PartMesh, PetgColour } from '../geometry';
 import { bandsEqual, fitBands } from './bands';
 import { encodeConfig } from './codec';
 import type { BandCounts } from './codec';
@@ -68,6 +68,9 @@ export const selectFittedBands = (s: LampState): Bands => {
 
 /** Fitted bands of one stack. */
 export const selectStackBands = (s: LampState, stack: Stack): string[] => selectFittedBands(s)[stack];
+
+/** Body forms fitted to the current N, bottom → top (stable per params object, like the dims). */
+export const selectFittedForms = (s: LampState, stack: Stack): FormId[] => selectDims(s)[stack].forms;
 
 const planMemo = memoLast((palette: PetgColour[], inner: string[], outer: string[]): ColourPlan => ({ palette, inner, outer }));
 /** ColourPlan for the current N (what the export uses). */

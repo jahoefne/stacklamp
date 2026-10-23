@@ -18,6 +18,7 @@ export {
   setParam,
 } from './params';
 export { deriveDims } from './derive';
+export { FORMS, DEFAULT_FORM, ZONE_MARGIN, allStraight, fitForms, formByCode, formsEqual, isFormId, partFileStem, type FormPreset } from './forms';
 export { partsKey } from './keys';
 export { computeBom, PETG_DENSITY_G_CM3, FILAMENT_DIAMETER_MM } from './bom';
 export { MESSAGE_CODES, type MessageCode } from './messages';

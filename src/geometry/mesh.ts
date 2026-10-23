@@ -7,7 +7,7 @@
  */
 import { PETG_DENSITY_G_CM3 } from './bom';
 import type { Manifold, Scope } from './kernel';
-import type { PartId, PartMesh, Quality } from './types';
+import type { FormId, PartId, PartMesh, Quality } from './types';
 
 /** Edges sharper than this keep separate normals on each side in preview meshes, degrees. */
 export const PREVIEW_SHARP_ANGLE = 35;
@@ -93,6 +93,8 @@ export function massOf(volume: number, printedVolume: number): { solid: number; 
 
 export interface ToPartMeshOptions {
   id: PartId;
+  /** Segments only: the body form of this mesh. */
+  form?: FormId | undefined;
   quality: Quality;
   copies: number;
   normals: boolean;
@@ -105,6 +107,7 @@ export function toPartMesh(s: Scope, m: Manifold, o: ToPartMeshOptions): PartMes
   const box = m.boundingBox();
   const base = {
     id: o.id,
+    ...(o.form !== undefined ? { form: o.form } : {}),
     quality: o.quality,
     triangleCount: m.numTri(),
     volume,

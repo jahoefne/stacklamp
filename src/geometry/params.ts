@@ -49,7 +49,7 @@ export function defaultParams(): LampParams {
   return {
     version: 1,
     core: { kind: 'aluminium-rod', diameter: 20, length: 1500, stripBuildUp: 3 },
-    tubes: { innerOD: 60, outerOD: 200 },
+    tubes: { innerOD: 60, outerOD: 200, innerFormOD: 90, outerFormOD: 240 },
     segments: {
       wall: 0.8,
       overlap: 20,
@@ -58,6 +58,7 @@ export function defaultParams(): LampParams {
       innerHeight: 150,
       outerHeight: 150,
       maxDeviation: 0.1,
+      maxOverhang: 45,
     },
     base: {
       diameter: 240,
@@ -91,6 +92,7 @@ export function defaultParams(): LampParams {
     },
     printer: { preset: 'bambu-256', nozzle: '0.6', bedX: 256, bedY: 256, bedZ: 250 },
     tolerances: { segment: 0.25, core: 0.3, plateRadial: 1.5, plateDepth: 1 },
+    forms: { inner: [], outer: [] },
   };
 }
 
@@ -130,6 +132,8 @@ export const PARAM_META: readonly ParamMeta[] = [
   mm('core.stripBuildUp', 'LED strip build-up', 0, 8, 0.5, 'core', true, 'Radial thickness the strip adds to the rod.'),
   mm('tubes.innerOD', 'Inner tube diameter', 30, 120, 1, 'tubes'),
   mm('tubes.outerOD', 'Outer tube diameter', 80, 260, 1, 'tubes'),
+  mm('tubes.outerFormOD', 'Outer form diameter', 40, 400, 1, 'tubes', false, 'Widest point of bulging outer forms; waists narrow by the same amount.'),
+  mm('tubes.innerFormOD', 'Inner form diameter', 20, 250, 1, 'tubes', false, 'Widest point of bulging inner forms; waists narrow by the same amount.'),
   mm('segments.innerHeight', 'Inner segment height', 60, 250, 5, 'segments'),
   mm('segments.outerHeight', 'Outer segment height', 60, 250, 5, 'segments'),
   mm('segments.wall', 'Wall thickness', 0.4, 2, 0.05, 'segments', false, 'Equals the vase-mode line width.'),
@@ -146,6 +150,18 @@ export const PARAM_META: readonly ParamMeta[] = [
     group: 'segments',
     advanced: true,
     hint: 'How far auto-fit may move the segment height from its target.',
+  },
+  {
+    path: 'segments.maxOverhang',
+    label: 'Max form overhang',
+    unit: '°',
+    min: 30,
+    max: 60,
+    step: 1,
+    precision: 0,
+    group: 'segments',
+    advanced: true,
+    hint: 'Steepest outward flank of a form, from vertical, that still prints in vase mode.',
   },
   mm('base.diameter', 'Base diameter', 150, 320, 1, 'base'),
   mm('base.minHeight', 'Base minimum height', 30, 80, 1, 'base', true),

@@ -10,14 +10,28 @@ export type WireRouting = 'auto' | 'beside-collar' | 'through-socket';
 export type PrinterId = 'bambu-256' | 'bambu-a1-mini' | 'prusa-mk4' | 'ender-3' | 'custom';
 /** Nozzle diameters the print plan has settings for (see NOZZLES). */
 export type NozzleId = '0.4' | '0.6' | '0.8';
+/**
+ * Body form of a segment between its shoulder and the next segment's socket (the joint is
+ * always the same). Round forms are profile changes; star, flute and twist warp the body.
+ */
+export type FormId = 'straight' | 'drop' | 'ball' | 'waist' | 'barrel' | 'star' | 'flute' | 'twist';
+export const FORM_IDS: readonly FormId[] = ['straight', 'drop', 'ball', 'waist', 'barrel', 'star', 'flute', 'twist'];
 
 export interface LampParams {
   version: 1;
   /** The vertical core: a rod (wrapped in an LED strip) or a single-ended LED tube. */
   core: { kind: CoreKind; diameter: number; length: number; stripBuildUp: number };
-  /** Outer diameters of the two tube stacks. */
-  tubes: { innerOD: number; outerOD: number };
-  /** Segment construction and height fitting. innerHeight/outerHeight are targets (auto) or exact (locked). */
+  /**
+   * Outer diameters of the two tube stacks, and the form diameter per stack: the widest
+   * point of bulging forms (drop, ball, barrel, star, flute, twist); waists narrow by the
+   * same amount.
+   */
+  tubes: { innerOD: number; outerOD: number; innerFormOD: number; outerFormOD: number };
+  /**
+   * Segment construction and height fitting. innerHeight/outerHeight are targets (auto) or
+   * exact (locked). maxOverhang (degrees from vertical) caps every outward-going flank of a
+   * form, so the segments still print in vase mode.
+   */
   segments: {
     wall: number;
     overlap: number;
@@ -26,6 +40,7 @@ export interface LampParams {
     innerHeight: number;
     outerHeight: number;
     maxDeviation: number;
+    maxOverhang: number;
   };
   base: {
     diameter: number;
@@ -60,6 +75,11 @@ export interface LampParams {
   };
   printer: { preset: PrinterId; nozzle: NozzleId; bedX: number; bedY: number; bedZ: number };
   tolerances: { segment: number; core: number; plateRadial: number; plateDepth: number };
+  /**
+   * Stored body forms per stack, bottom → top. May be longer or shorter than the segment
+   * count: `fitForms` repeats the pattern (an empty list is all straight).
+   */
+  forms: { inner: FormId[]; outer: FormId[] };
 }
 
 /** Every numeric leaf of LampParams as a dotted path (the UI and the URL codec key off these). */
@@ -69,12 +89,15 @@ export type NumericParamPath =
   | 'core.stripBuildUp'
   | 'tubes.innerOD'
   | 'tubes.outerOD'
+  | 'tubes.innerFormOD'
+  | 'tubes.outerFormOD'
   | 'segments.wall'
   | 'segments.overlap'
   | 'segments.rimLeadIn'
   | 'segments.innerHeight'
   | 'segments.outerHeight'
   | 'segments.maxDeviation'
+  | 'segments.maxOverhang'
   | 'base.diameter'
   | 'base.minHeight'
   | 'base.topRound'
@@ -118,7 +141,7 @@ export type ParamGroup = 'core' | 'tubes' | 'segments' | 'base' | 'plate' | 'cov
 export interface ParamMeta {
   path: NumericParamPath;
   label: string;
-  unit: 'mm' | '' | '%';
+  unit: 'mm' | '' | '%' | '°';
   min: number;
   max: number;
   step: number;
@@ -191,6 +214,10 @@ export interface SegmentDims {
   stackBottomZ: number;
   /** World z of the top rim of the top segment. */
   topZ: number;
+  /** Body form of every segment, index 0 = bottom (`params.forms` fitted to `count`). */
+  forms: FormId[];
+  /** Widest point of any form in use (≥ socketOD): the stack's footprint. */
+  maxOD: number;
 }
 
 export interface DerivedDims {
@@ -251,6 +278,12 @@ export interface DerivedDims {
 
 export interface PartMesh {
   id: PartId;
+  /**
+   * Segments only: the body form this mesh has. A stack with several forms yields several
+   * PartMesh objects with the same `id`, one per distinct form, each with the copies that
+   * form needs (`DerivedDims.inner/outer.forms` says which band gets which).
+   */
+  form?: FormId;
   quality: Quality;
   /** xyz triples, print frame: bed at z = 0, centred on the origin, mm. */
   positions: Float32Array;
@@ -303,6 +336,8 @@ export interface ExportResult {
 
 export interface BomPartRow {
   part: PartId;
+  /** Segments only: the form of this row's mesh (one row per form in use). */
+  form?: FormId;
   file: string;
   copies: number;
   volumeMm3Each: number;

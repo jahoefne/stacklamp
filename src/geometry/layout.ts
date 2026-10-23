@@ -11,10 +11,11 @@
  * plate clamp prints flange-down (countersink on the bed) and is lifted into
  * the pocket by its placement.
  */
+import { DEFAULT_FORM, fitForms } from './forms';
 import { nozzleOf } from './params';
 import { baseShell, coverShell, type ShellSettings } from './print';
 import { solveStacks, type SolvedStacks } from './solver';
-import type { LampParams } from './types';
+import type { FormId, LampParams } from './types';
 
 // ---------------------------------------------------------------- named constants (mm)
 
@@ -101,6 +102,23 @@ export interface SegmentSpec {
   height: number;
   /** Vase-mode layer height (from the nozzle). Only the mass estimate reads it. */
   layer: number;
+  /** Body form between the shoulder and the next socket (profiles/forms.ts). */
+  form: FormId;
+  /**
+   * Only for forms other than straight (absent on straight specs so their cache keys do
+   * not change with the form settings): the stack's form diameter, mm, and the steepest
+   * outward flank in degrees from vertical.
+   */
+  formOD?: number;
+  maxOverhang?: number;
+}
+
+/** One mesh of a stack: a form and the bands (0 = bottom) that use it. */
+export interface SegmentVariant {
+  form: FormId;
+  spec: SegmentSpec;
+  /** Ascending band indices. */
+  bands: number[];
 }
 
 export interface RingSpec {
@@ -186,11 +204,17 @@ export interface ClampSpec {
 
 export interface PartSpecs {
   base: BaseSpec;
+  /** The stack's straight spec: joint numbers, socket OD (the base rings and the checks read it). */
   inner: SegmentSpec;
   outer: SegmentSpec;
   cover: CoverSpec;
   clamp: ClampSpec;
   fitTest: SegmentSpec;
+  /**
+   * The meshes each stack needs: one per distinct form, in order of first appearance from
+   * the bottom. A stack with no segments still has one straight variant with no bands.
+   */
+  variants: { inner: SegmentVariant[]; outer: SegmentVariant[] };
 }
 
 export interface BaseLayout {
@@ -224,6 +248,8 @@ export interface Layout {
   solved: SolvedStacks;
   base: BaseLayout;
   specs: PartSpecs;
+  /** `params.forms` fitted to the solved counts, bottom → top. */
+  forms: { inner: FormId[]; outer: FormId[] };
 }
 
 // ---------------------------------------------------------------- helpers
@@ -255,8 +281,8 @@ export function farthestAzimuth(avoid: readonly number[]): number {
   return best;
 }
 
-export function segmentSpec(p: LampParams, D: number, height: number): SegmentSpec {
-  return {
+export function segmentSpec(p: LampParams, D: number, height: number, form: FormId = DEFAULT_FORM, formOD = D): SegmentSpec {
+  const spec: SegmentSpec = {
     kind: 'segment',
     D,
     wall: p.segments.wall,
@@ -265,7 +291,28 @@ export function segmentSpec(p: LampParams, D: number, height: number): SegmentSp
     leadIn: p.segments.rimLeadIn,
     height,
     layer: nozzleOf(p).layer,
+    form,
   };
+  if (form !== DEFAULT_FORM) {
+    spec.formOD = formOD;
+    spec.maxOverhang = p.segments.maxOverhang;
+  }
+  return spec;
+}
+
+/** The variants of a stack for its fitted forms (see PartSpecs.variants). */
+export function segmentVariants(p: LampParams, D: number, height: number, formOD: number, forms: readonly FormId[]): SegmentVariant[] {
+  const out: SegmentVariant[] = [];
+  forms.forEach((form, k) => {
+    let v = out.find((x) => x.form === form);
+    if (!v) {
+      v = { form, spec: segmentSpec(p, D, height, form, formOD), bands: [] };
+      out.push(v);
+    }
+    v.bands.push(k);
+  });
+  if (out.length === 0) out.push({ form: DEFAULT_FORM, spec: segmentSpec(p, D, height), bands: [] });
+  return out;
 }
 
 export const socketOD = (s: SegmentSpec): number => s.D + 2 * s.clearance + 2 * s.wall;
@@ -464,6 +511,8 @@ export function computeLayout(p: LampParams): Layout {
   const base = layoutBase(p, solved.ringHeight);
   const inner = segmentSpec(p, p.tubes.innerOD, solved.inner.fit.height);
   const outer = segmentSpec(p, p.tubes.outerOD, solved.outer.fit.height);
+  const innerForms = fitForms(p.forms.inner, solved.inner.fit.count);
+  const outerForms = fitForms(p.forms.outer, solved.outer.fit.count);
   return {
     solved,
     base,
@@ -474,6 +523,11 @@ export function computeLayout(p: LampParams): Layout {
       cover: coverSpec(p),
       clamp: clampSpec(p, base),
       fitTest: segmentSpec(p, p.tubes.outerOD, solved.seatZ + FIT_TEST_EXTRA),
+      variants: {
+        inner: segmentVariants(p, p.tubes.innerOD, solved.inner.fit.height, p.tubes.innerFormOD, innerForms),
+        outer: segmentVariants(p, p.tubes.outerOD, solved.outer.fit.height, p.tubes.outerFormOD, outerForms),
+      },
     },
+    forms: { inner: innerForms, outer: outerForms },
   };
 }

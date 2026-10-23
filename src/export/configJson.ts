@@ -7,11 +7,14 @@ import { z } from 'zod';
 import type { ColourPlan, DerivedDims, ExportRequest, LampParams } from '../geometry/types';
 
 const n = z.number();
+/** Unknown forms (from a newer app) read as straight. */
+const FormIdSchema = z.enum(['straight', 'drop', 'ball', 'waist', 'barrel', 'star', 'flute', 'twist']).catch('straight');
 
 export const LampParamsSchema = z.object({
   version: z.literal(1),
   core: z.object({ kind: z.enum(['aluminium-rod', 'led-tube']), diameter: n, length: n, stripBuildUp: n }),
-  tubes: z.object({ innerOD: n, outerOD: n }),
+  // form diameters, overhang and forms were added later: older files read as straight tubes
+  tubes: z.object({ innerOD: n, outerOD: n, innerFormOD: n.default(90), outerFormOD: n.default(240) }),
   segments: z.object({
     wall: n,
     overlap: n,
@@ -20,6 +23,7 @@ export const LampParamsSchema = z.object({
     innerHeight: n,
     outerHeight: n,
     maxDeviation: n,
+    maxOverhang: n.default(45),
   }),
   base: z.object({
     diameter: n,
@@ -60,6 +64,9 @@ export const LampParamsSchema = z.object({
     bedZ: n,
   }),
   tolerances: z.object({ segment: n, core: n, plateRadial: n, plateDepth: n }),
+  forms: z
+    .object({ inner: z.array(FormIdSchema), outer: z.array(FormIdSchema) })
+    .default({ inner: [], outer: [] }),
 });
 
 const ColourPlanSchema = z.object({

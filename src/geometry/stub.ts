@@ -88,6 +88,8 @@ export function deriveDims(p: LampParams): DerivedDims {
     pitch: fit.H - seatZ,
     D,
     socketOD: D + 2 * c + 2 * w,
+    forms: Array(fit.n).fill('straight'),
+    maxOD: D + 2 * c + 2 * w,
     stackBottomZ: zt + p.base.footGap,
     topZ: zt + ringHeight + fit.n * (fit.H - seatZ),
   });

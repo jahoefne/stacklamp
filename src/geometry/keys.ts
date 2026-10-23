@@ -4,11 +4,12 @@
  * are all the builders read. The printer preset only matters through bedZ
  * (the maximum segment height), which the specs already reflect. The nozzle
  * is in the specs too (layer height, shells): it changes the mass estimates,
- * not the geometry, so a nozzle change rebuilds the parts.
+ * not the geometry, so a nozzle change rebuilds the parts. The segment forms
+ * are in the specs as variants (one per form in use per stack).
  */
 import { derive } from './derive';
-import type { PartSpecs } from './layout';
-import type { LampParams, PartId, Quality } from './types';
+import type { PartSpecs, SegmentSpec } from './layout';
+import type { FormId, LampParams, PartId, Quality } from './types';
 
 /** JSON with object keys sorted at every level (arrays keep their order). */
 export function canonicalJson(value: unknown): string {
@@ -24,27 +25,36 @@ export function canonicalJson(value: unknown): string {
   return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(obj[k])}`).join(',')}}`;
 }
 
+/**
+ * The segment spec a segment part is built from: the stack's variant with `form`
+ * (the stack's straight spec when `form` is absent or not in use), or the fit test.
+ */
+export function segmentSpecFor(specs: PartSpecs, id: 'inner-segment' | 'outer-segment' | 'fit-test', form?: FormId): SegmentSpec {
+  if (id === 'fit-test') return specs.fitTest;
+  const stack = id === 'inner-segment' ? 'inner' : 'outer';
+  if (form === undefined) return specs[stack];
+  return specs.variants[stack].find((v) => v.form === form)?.spec ?? specs[stack];
+}
+
 /** The spec a part is built from. */
-export function specFor(specs: PartSpecs, id: PartId): PartSpecs[keyof PartSpecs] {
+export function specFor(specs: PartSpecs, id: PartId, form?: FormId): PartSpecs['base' | 'cover' | 'clamp'] | SegmentSpec {
   switch (id) {
     case 'base':
       return specs.base;
     case 'inner-segment':
-      return specs.inner;
     case 'outer-segment':
-      return specs.outer;
+    case 'fit-test':
+      return segmentSpecFor(specs, id, form);
     case 'top-cover':
       return specs.cover;
     case 'plate-clamp':
       return specs.clamp;
-    case 'fit-test':
-      return specs.fitTest;
   }
 }
 
-/** Mesh cache key of one part at one quality. */
-export function partCacheKey(id: PartId, quality: Quality, specs: PartSpecs): string {
-  return `${id}|${quality}|${canonicalJson(specFor(specs, id))}`;
+/** Mesh cache key of one part (one form of a segment stack) at one quality. */
+export function partCacheKey(id: PartId, quality: Quality, specs: PartSpecs, form?: FormId): string {
+  return `${id}${form ? `#${form}` : ''}|${quality}|${canonicalJson(specFor(specs, id, form))}`;
 }
 
 export function partsKey(params: LampParams): string {
