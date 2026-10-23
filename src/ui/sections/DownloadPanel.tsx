@@ -1,4 +1,5 @@
 import { useId, useLayoutEffect, useRef, type ReactElement } from 'react';
+import { DEFAULT_FORM, FORMS } from '../../geometry';
 import type { Bom, PetgColour } from '../../geometry';
 import { cancelDownload, download, selectBlockers, selectBom, selectPalette, useLamp, useLampActions } from '../../state';
 import type { ExportJob, LampState } from '../../state';
@@ -188,12 +189,18 @@ function BomTables({ bom, palette }: { bom: Bom; palette: readonly PetgColour[] 
           {bom.parts.map((p) => {
             const fits = p.fitsBed && p.fitsZ;
             return (
-              <tr key={p.part}>
+              <tr key={p.file} data-file={p.file}>
                 <th scope="row" className={styles.partCell}>
                   <span className={fits ? styles.fitOk : styles.fitBad}>
                     <UiIcon name={fits ? 'check' : 'warning'} size={16} title={fits ? 'Fits your printer' : 'Does not fit your printer'} />
                   </span>
                   {PART_LABELS[p.part]}
+                  {p.form && p.form !== DEFAULT_FORM ? (
+                    <>
+                      {' '}
+                      <span className={styles.partForm}>· {FORMS[p.form].label}</span>
+                    </>
+                  ) : null}
                 </th>
                 <td className={styles.num}>{p.copies} ×</td>
                 <td className={styles.num}>{grams(p.gramsEstimateEach)}</td>

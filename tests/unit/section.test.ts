@@ -2,12 +2,13 @@
  * Assembly interference in the (r, z) half plane: no two placed profiles
  * (base, every segment, cover, clamp, weight plate, rod) overlap, and the
  * parts that are meant to bear on each other actually touch (shift one by
- * 0.01 mm and they overlap).
+ * 0.01 mm and they overlap). A segment is the envelope of its band's form.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { deriveDims } from '../../src/geometry/derive';
+import { derive, deriveDims } from '../../src/geometry/derive';
 import type { Kernel } from '../../src/geometry/kernel';
 import { profileBounds, translateProfile, type Profile } from '../../src/geometry/profile';
+import { segmentEnvelope, segmentRMax } from '../../src/geometry/profiles/forms';
 import { assemblySection, overlapArea, type SectionPiece } from '../../src/geometry/section';
 import { getKernel } from '../helpers/kernel';
 import { CASES } from '../helpers/params';
@@ -78,5 +79,39 @@ describe.each(CASES.filter((c) => !c.expectErrors?.length))('$name', ({ params }
     expect(overlapArea(k, up(plate), piece(pieces, 'base').polygon)).toBeGreaterThan(CONTACT);
     expect(overlapArea(k, up(piece(pieces, 'plate-clamp')), plate.polygon)).toBeGreaterThan(CONTACT);
     expect(overlapArea(k, down(piece(pieces, 'plate-clamp')), piece(pieces, 'base').polygon)).toBeLessThan(NONE);
+  });
+});
+
+describe('segment forms in the section', () => {
+  const caseParams = (name: string) => CASES.find((c) => c.name === name)!.params;
+
+  it("every band is its form's envelope, placed by the pitch", () => {
+    const params = caseParams('mixed forms');
+    const { dims, layout } = derive(params);
+    const pieces = assemblySection(params);
+    for (const [part, stack] of [
+      ['inner-segment', 'inner'],
+      ['outer-segment', 'outer'],
+    ] as const) {
+      const s = dims[stack];
+      expect(new Set(s.forms).size, stack).toBe(4);
+      for (let k = 0; k < s.count; k++) {
+        const spec = layout!.specs.variants[stack].find((v) => v.form === s.forms[k])!.spec;
+        const polygon = piece(pieces, `${part}#${k + 1}`).polygon;
+        expect(polygon, `${part}#${k + 1}`).toEqual(translateProfile(segmentEnvelope(spec), s.stackBottomZ + k * s.pitch));
+        expect(profileBounds(polygon).rMax).toBeCloseTo(segmentRMax(spec), 9);
+      }
+    }
+  });
+
+  it('an inner form the derive rejects as too wide really runs into the outer stack', () => {
+    const params = caseParams('inner form too wide');
+    expect(deriveDims(params).messages.map((m) => m.code)).toContain('form-too-wide');
+    const pieces = assemblySection(params);
+    const inner = pieces.filter((p) => p.part === 'inner-segment');
+    const outer = pieces.filter((p) => p.part === 'outer-segment');
+    let worst = 0;
+    for (const a of inner) for (const b of outer) if (zOverlap(a.polygon, b.polygon)) worst = Math.max(worst, overlapArea(k, a.polygon, b.polygon));
+    expect(worst).toBeGreaterThan(CONTACT);
   });
 });

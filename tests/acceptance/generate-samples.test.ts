@@ -2,8 +2,9 @@
  * Acceptance: build the real download ZIP in Node for a handful of lamps, write
  * it to `out/<case>/stacklamp.zip`, unpack it next to it (input for
  * `scripts/slice-check.sh out`) and check what a maker gets: exactly the
- * documented entries, valid part files, a config.json that reopens the same
- * lamp, and a print plan whose counts match the derived dimensions.
+ * documented entries (one file per segment form in use), valid part files, a
+ * config.json that reopens the same lamp, and a print plan whose counts match
+ * the derived dimensions.
  *
  * Run with `npm run gen:samples` (vitest.acceptance.config.ts).
  */
@@ -15,7 +16,7 @@ import type { BufferGeometry, Mesh, Object3D } from 'three';
 import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { num } from '../../src/export/format';
-import { defaultParams, deriveDims, parseConfig } from '../../src/geometry';
+import { FORMS, allStraight, defaultParams, deriveDims, fitForms, parseConfig, partFileStem } from '../../src/geometry';
 import type { ColourPlan, DerivedDims, ExportFormat, ExportRequest, LampParams } from '../../src/geometry';
 import { fitBands } from '../../src/state/bands';
 import { decodeConfig, encodeConfig } from '../../src/state/codec';
@@ -39,6 +40,8 @@ interface SampleCase {
   params: LampParams;
   format: ExportFormat;
   includeFitTest: boolean;
+  /** Part file stems in ZIP order (default: one file per part, all segments straight). */
+  parts?: string[];
 }
 
 const a1Mini = CASES.find((c) => c.name === 'A1 mini lamp');
@@ -61,6 +64,29 @@ const SAMPLES: SampleCase[] = [
   { name: 'stl-defaults', params: defaultParams(), format: 'stl', includeFitTest: false },
   { name: 'nozzle-04', params: withNozzle('0.4'), format: '3mf', includeFitTest: false },
   { name: 'nozzle-08', params: withNozzle('0.8'), format: '3mf', includeFitTest: false },
+  {
+    name: 'forms',
+    params: withParams((p) => {
+      p.forms.inner = ['ball', 'straight', 'drop'];
+      p.forms.outer = ['barrel', 'star', 'straight', 'flute'];
+      p.tubes.innerFormOD = 100;
+      p.tubes.outerFormOD = 230;
+    }),
+    format: '3mf',
+    includeFitTest: false,
+    parts: [
+      'base',
+      'inner-segment-ball',
+      'inner-segment',
+      'inner-segment-drop',
+      'outer-segment-barrel',
+      'outer-segment-star',
+      'outer-segment',
+      'outer-segment-flute',
+      'top-cover',
+      'plate-clamp',
+    ],
+  },
 ];
 
 /** The colour plan and the share link the app would produce for these params. */
@@ -96,6 +122,8 @@ function tableAfter(md: string, heading: string): string[][] {
   }
   return rows.slice(2);
 }
+
+const asmOf = (files: Record<string, Uint8Array>): string => strFromU8(files['ASSEMBLY.md']!);
 
 /** "Amber × 4, Orange × 4, Red × 3" → 11 */
 const summaryCount = (s: string): number => [...s.matchAll(/× (\d+)/g)].reduce((a, m) => a + Number(m[1]), 0);
@@ -136,9 +164,8 @@ describe.each(SAMPLES)('sample $name', (sample) => {
 
     // --- entries
     const ext = sample.format;
-    const partNames = ['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp', ...(sample.includeFitTest ? ['fit-test'] : [])].map(
-      (p) => `${p}.${ext}`,
-    );
+    const stems = sample.parts ?? ['base', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp', ...(sample.includeFitTest ? ['fit-test'] : [])];
+    const partNames = stems.map((p) => `${p}.${ext}`);
     expect(Object.keys(files)).toEqual([...partNames, 'PRINT-PLAN.md', 'ASSEMBLY.md', 'config.json']);
     expect(fileName).toBe(
       `stacklamp-L${num(sample.params.core.length)}-D${num(sample.params.tubes.outerOD)}-${sample.params.core.kind === 'led-tube' ? 'tube' : 'rod'}-o${dims.outer.count}x${num(dims.outer.height)}-i${dims.inner.count}x${num(dims.inner.height)}.zip`,
@@ -158,6 +185,10 @@ describe.each(SAMPLES)('sample $name', (sample) => {
         const xml = strFromU8(pkg['3D/3dmodel.model']!);
         expect(xml).toContain('unit="millimeter"');
         expect(xml.match(/<object /g), name).toHaveLength(1);
+        // a form's file says which form it is; straight segments carry no form
+        const form = /-segment-(\w+)\./.exec(name)?.[1];
+        if (form) expect(xml, name).toContain(`<metadata name="stacklamp:form">${form}</metadata>`);
+        else expect(xml, name).not.toContain('stacklamp:form');
       }
     }
 
@@ -180,7 +211,12 @@ describe.each(SAMPLES)('sample $name', (sample) => {
     const decoded = decodeConfig(new URL(cfg.shareUrl).hash);
     expect(decoded, cfg.shareUrl).not.toBeNull();
     expect(decoded!.issues).toEqual([]);
-    expect(decoded!.config.params).toEqual(sample.params);
+    // the link stores one form per band, so compare the forms fitted to the counts
+    const { forms: linkForms, ...linkRest } = decoded!.config.params;
+    const { forms: _forms, ...sampleRest } = sample.params;
+    expect(linkRest).toEqual(sampleRest);
+    expect(fitForms(linkForms.inner, again.inner.count)).toEqual(dims.inner.forms);
+    expect(fitForms(linkForms.outer, again.outer.count)).toEqual(dims.outer.forms);
     const c = decoded!.config;
     expect(fitBands(c.bands.outer, again.outer.count, c.palette, c.gen.outer)).toEqual(plan.outer);
     expect(fitBands(c.bands.inner, again.inner.count, c.palette, c.gen.inner)).toEqual(plan.inner);
@@ -191,12 +227,19 @@ describe.each(SAMPLES)('sample $name', (sample) => {
     const partsRows = tableAfter(md, '## Parts');
     expect(partsRows.map((r) => r[0])).toEqual(partNames);
     const row = (file: string) => partsRows.find((r) => r[0] === file)!;
-    for (const [file, n] of [
-      [`outer-segment.${ext}`, dims.outer.count],
-      [`inner-segment.${ext}`, dims.inner.count],
+    // every segment file: as many copies (and colours) as bands of its form; the stack adds up
+    for (const [id, s] of [
+      ['outer-segment', dims.outer],
+      ['inner-segment', dims.inner],
     ] as const) {
-      expect(Number(row(file)[2]), file).toBe(n);
-      expect(summaryCount(row(file)[3]!), file).toBe(n);
+      const stackFiles = partNames.filter((f) => f.startsWith(id));
+      expect(stackFiles.length, id).toBe(new Set(s.forms).size);
+      for (const file of stackFiles) {
+        const n = s.forms.filter((f) => `${partFileStem(id, f)}.${ext}` === file).length;
+        expect(Number(row(file)[2]), file).toBe(n);
+        expect(summaryCount(row(file)[3]!), file).toBe(n);
+      }
+      expect(stackFiles.reduce((a, f) => a + Number(row(f)[2]), 0), id).toBe(s.count);
     }
     expect(row(`base.${ext}`)[2]).toBe('1');
     expect(row(`top-cover.${ext}`)[2]).toBe('1');
@@ -209,13 +252,33 @@ describe.each(SAMPLES)('sample $name', (sample) => {
     const want = (id: string) => plan.outer.filter((x) => x === id).length;
     expect([outerOf('Amber'), outerOf('Orange'), outerOf('Red')]).toEqual([want('amb'), want('org'), want('red')]);
     expect(Number(colourRows.find((r) => r[0]!.startsWith('Clear'))![1])).toBe(dims.inner.count);
-    // the colour order lists every band once
-    const order = md.slice(md.indexOf('### Colour order'));
-    expect(order.match(/^\d+\. /gm)?.length).toBe(dims.inner.count + dims.outer.count);
+    // the colour order (with forms: the segment order) lists every band once
+    const withForms = !allStraight(dims.inner.forms) || !allStraight(dims.outer.forms);
+    if (withForms) {
+      expect(md).not.toContain('### Colour order');
+      const order = md.slice(md.indexOf('### Segment order (bottom → top)'));
+      for (const [label, id, s, bands] of [
+        ['**Outer stack**', 'outer-segment', dims.outer, plan.outer],
+        ['**Inner stack**', 'inner-segment', dims.inner, plan.inner],
+      ] as const) {
+        const want = s.forms.map((f, k) => [
+          String(k + 1),
+          FORMS[f].label,
+          plan.palette.find((c) => c.id === bands[k])!.name,
+          `${partFileStem(id, f)}.${ext}`,
+        ]);
+        expect(tableAfter(order, label), label).toEqual(want);
+      }
+      expect(asmOf(files)).toContain('following the segment order in PRINT-PLAN.md');
+    } else {
+      expect(md).not.toContain('### Segment order');
+      const order = md.slice(md.indexOf('### Colour order'));
+      expect(order.match(/^\d+\. /gm)?.length).toBe(dims.inner.count + dims.outer.count);
+    }
     for (const f of partNames) expect(md, f).toContain(f);
 
     // --- case specifics
-    const asm = strFromU8(files['ASSEMBLY.md']!);
+    const asm = asmOf(files);
     expect(asm).toContain(`${dims.inner.count} × inner segment, ${dims.outer.count} × outer segment`);
     if (sample.name === 'locked') {
       expect(dims.rod.cutOff).toBeGreaterThan(0);

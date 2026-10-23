@@ -69,6 +69,12 @@
   vertical-align: -2px;
 }
 
+.partCell > .partForm {
+  margin-right: 0;
+  vertical-align: baseline;
+  color: var(--color-ink-2);
+}
+
 .fitOk {
   display: inline-block;
   color: var(--color-ok);

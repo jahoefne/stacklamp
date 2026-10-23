@@ -2,7 +2,7 @@
  * Test fixtures for the preview: hand-built PartMeshes (engine-agnostic, no worker)
  * plus real derived dims from the geometry barrel.
  */
-import { defaultParams, deriveDims, type DerivedDims, type PartId, type PartMesh } from '../geometry';
+import { defaultParams, deriveDims, type DerivedDims, type FormId, type PartId, type PartMesh } from '../geometry';
 
 /** Closed annular tube, print frame (bed at z = 0), `n` facets. */
 export function tubeMesh(id: PartId, ro: number, ri: number, h: number, n = 32, withNormals = false): PartMesh {
@@ -49,13 +49,43 @@ export function defaultDims(): DerivedDims {
   return deriveDims(defaultParams());
 }
 
-/** One mesh per assembly part, sized from the dims. */
+/**
+ * A segment stack as the worker yields it: one mesh per distinct form in `forms` (first use
+ * first), each with `form` set and as many copies as bands with that form. A non-straight
+ * form gets a slightly wider tube so the geometries differ.
+ */
+export function stackMeshes(id: 'inner-segment' | 'outer-segment', D: number, height: number, forms: readonly FormId[]): PartMesh[] {
+  const copies = new Map<FormId, number>();
+  for (const f of forms) copies.set(f, (copies.get(f) ?? 0) + 1);
+  return [...copies].map(([form, n]) => {
+    const ro = D / 2 + (form === 'straight' ? 0 : 5);
+    return { ...tubeMesh(id, ro, D / 2 - 0.8, height), form, copies: n };
+  });
+}
+
+/** One mesh per assembly part (one per form in use for a segment stack), sized from the dims. */
 export function fixtureParts(d: DerivedDims = defaultDims()): PartMesh[] {
   return [
     tubeMesh('base', 120, 15, d.base.height),
-    { ...tubeMesh('inner-segment', d.inner.D / 2, d.inner.D / 2 - 0.8, d.inner.height), copies: d.inner.count },
-    { ...tubeMesh('outer-segment', d.outer.D / 2, d.outer.D / 2 - 0.8, d.outer.height), copies: d.outer.count },
+    ...stackMeshes('inner-segment', d.inner.D, d.inner.height, d.inner.forms),
+    ...stackMeshes('outer-segment', d.outer.D, d.outer.height, d.outer.forms),
     tubeMesh('top-cover', d.cover.od / 2, 12, 3),
     tubeMesh('plate-clamp', d.base.clampDiameter / 2, 2.25, 3),
   ];
+}
+
+/** Bands of the inner stack that get the ball form in `formFixture` (the rest is straight). */
+export const BALL_BANDS: readonly number[] = [1, 4];
+
+/**
+ * Default lamp whose inner stack has two ball bands (1 and 4, counted from the bottom) and
+ * straight bands elsewhere: two inner meshes (ball × 2, straight × the rest). The outer
+ * stack stays straight.
+ */
+export function formFixture(): { dims: DerivedDims; parts: PartMesh[] } {
+  const p = defaultParams();
+  const n = deriveDims(p).inner.count;
+  p.forms.inner = Array.from({ length: n }, (_, k): FormId => (BALL_BANDS.includes(k) ? 'ball' : 'straight'));
+  const dims = deriveDims(p);
+  return { dims, parts: fixtureParts(dims) };
 }

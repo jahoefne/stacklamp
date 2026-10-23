@@ -37,7 +37,7 @@ export interface NumberFieldProps {
   className?: string;
 }
 
-const UNIT_NAMES: Record<string, string> = { mm: 'millimetres', '%': 'percent' };
+const UNIT_NAMES: Record<string, string> = { mm: 'millimetres', '%': 'percent', '°': 'degrees' };
 /** How long the "set to …" note stays. */
 const STATUS_MS = 4000;
 

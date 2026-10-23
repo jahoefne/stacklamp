@@ -4,12 +4,16 @@
  */
 import { describe, expect, it } from 'vitest';
 import { deriveDims } from '../../src/geometry/derive';
+import { segmentSpec } from '../../src/geometry/layout';
+import { effectiveAmplitude, segmentRMax } from '../../src/geometry/profiles/forms';
 import { partsKey } from '../../src/geometry/keys';
 import { MESSAGE_CODES } from '../../src/geometry/messages';
 import { NOZZLES, NOZZLE_IDS, defaultParams } from '../../src/geometry/params';
 import { applyToPoint } from '../../src/geometry/placements';
 import type { LampParams } from '../../src/geometry/types';
 import { CASES, ledTube, withNozzle, withParams } from '../helpers/params';
+
+const caseParams = (name: string): LampParams => structuredClone(CASES.find((c) => c.name === name)!.params);
 
 const codes = (p: LampParams) => deriveDims(p).messages.map((m) => m.code);
 
@@ -159,6 +163,156 @@ describe('messages', () => {
   });
 });
 
+describe('segment forms', () => {
+  const formMessages = (p: LampParams) => deriveDims(p).messages.filter((m) => m.code.startsWith('form-'));
+
+  it('maxOD is the widest form in use (the bed footprint); straight lamps keep the socket', () => {
+    const d = deriveDims(defaultParams());
+    expect(d.inner.maxOD).toBe(d.inner.socketOD);
+    expect(d.outer.maxOD).toBe(d.outer.socketOD);
+    expect(d.inner.forms).toEqual(Array(d.inner.count).fill('straight'));
+
+    const m = deriveDims(caseParams('mixed forms'));
+    expect(m.inner.forms.slice(0, 5)).toEqual(['ball', 'straight', 'drop', 'waist', 'ball']);
+    expect(m.inner.maxOD).toBeCloseTo(84, 9);
+    // the twist is the only outer form scaled down (its ribs lean as they turn)
+    expect(m.outer.maxOD).toBeCloseTo(230, 9);
+    expect(m.fit['outer-segment'].size).toEqual([m.outer.maxOD, m.outer.maxOD, m.outer.height]);
+    expect(m.fit['inner-segment'].size).toEqual([m.inner.maxOD, m.inner.maxOD, m.inner.height]);
+    // an unused form diameter changes nothing
+    expect(deriveDims(withParams((p) => (p.tubes.outerFormOD = 400))).outer.maxOD).toBe(d.outer.maxOD);
+    // a wide outer form fails the bed fit through maxOD
+    const wide = deriveDims(
+      withParams((p) => {
+        p.forms.outer = ['ball'];
+        p.tubes.outerFormOD = 260;
+      }),
+    );
+    expect(wide.outer.maxOD).toBeGreaterThan(246);
+    expect(wide.messages.find((m) => m.code === 'bed-fit-outer-segment')?.path).toBe('tubes.outerOD');
+  });
+
+  it('form-squeezed names the stack, the form and the diameter it reaches', () => {
+    const p = caseParams('short 80 mm segments with balls');
+    const d = deriveDims(p);
+    const squeezed = d.messages.filter((m) => m.code === 'form-squeezed');
+    expect(squeezed.map((m) => m.path)).toEqual(['tubes.outerFormOD', 'tubes.outerFormOD']);
+    const ball = segmentSpec(p, 200, d.outer.height, 'ball', 240);
+    const reached = Math.round(2 * segmentRMax(ball) * 10) / 10;
+    expect(squeezed[0]!.severity).toBe('warning');
+    expect(squeezed[0]!.text).toBe(`Outer ball segments are too short for a 240 mm form; it reaches ${reached} mm.`);
+    expect(squeezed[1]!.text).toMatch(/^Outer twist segments are too short for a 240 mm form; it reaches [\d.]+ mm\.$/);
+    expect(d.ok).toBe(true);
+    // the inner balls fit their 33 mm zone
+    expect(effectiveAmplitude(segmentSpec(p, 60, d.inner.height, 'ball', 90))).toBe(15);
+    // a waist that cannot go as deep says how far it narrows
+    const waist = formMessages(
+      withParams((q) => {
+        q.segments.outerHeight = 80;
+        q.segments.innerHeight = 80;
+        q.forms.outer = ['waist'];
+      }),
+    );
+    expect(waist.map((m) => m.code)).toEqual(['form-squeezed']);
+    expect(waist[0]!.text).toMatch(/^Outer waist segments are too short to narrow to 160 mm; the waist reaches [\d.]+ mm\.$/);
+  });
+
+  it('form-too-wide: inner forms keep 2 mm from the outer stack; the stated maximum clears it', () => {
+    const m = formMessages(caseParams('inner form too wide'));
+    expect(m.map((x) => [x.code, x.severity, x.path])).toEqual([['form-too-wide', 'error', 'tubes.innerFormOD']]);
+    // outer rim inside radius 75 − 0.8 − 1 = 73.2, minus 2 mm: Ø 142.4
+    expect(m[0]!.text).toBe('The inner forms (150 mm) run into the outer segments; the inner form diameter can be at most 142.4 mm.');
+    const fixed = caseParams('inner form too wide');
+    fixed.tubes.innerFormOD = 142.4;
+    expect(formMessages(fixed)).toEqual([]);
+  });
+
+  it('form-too-narrow: an inner waist keeps clear of the rod, an outer waist of the inner stack', () => {
+    const inner = withParams((p) => {
+      p.forms.inner = ['waist'];
+      p.tubes.innerFormOD = 100;
+    });
+    const m = formMessages(inner);
+    expect(m.map((x) => [x.code, x.path])).toEqual([['form-too-narrow', 'tubes.innerFormOD']]);
+    // inside radius 30 − a − 0.8 − 1 must stay ≥ 10 + 3 + 2: a ≤ 13.2, Ø 86.4
+    expect(m[0]!.text).toBe('An inner waist down to 20 mm leaves no room for the rod and LED strip; with a waist the inner form diameter can be at most 86.4 mm.');
+    inner.tubes.innerFormOD = 86.4;
+    expect(formMessages(inner)).toEqual([]);
+    // the waist alone is not blamed for a tube that is too narrow anyway
+    expect(
+      formMessages(
+        withParams((p) => {
+          p.forms.inner = ['waist'];
+          p.tubes.innerOD = 30;
+        }),
+      ).map((x) => x.code),
+    ).not.toContain('form-too-narrow');
+
+    const both = formMessages(
+      withParams((p) => {
+        p.forms.inner = ['ball'];
+        p.forms.outer = ['waist'];
+        p.tubes.innerFormOD = 150;
+        p.tubes.outerFormOD = 260;
+      }),
+    );
+    expect(both.map((x) => [x.code, x.path])).toEqual([
+      ['form-too-wide', 'tubes.innerFormOD'],
+      ['form-too-narrow', 'tubes.outerFormOD'],
+    ]);
+    expect(both[1]!.text).toMatch(/^An outer waist down to 140 mm runs into the inner segments; with a waist the outer form diameter can be at most [\d.]+ mm\.$/);
+  });
+
+  it('forms keep clear of the rod collar and the cover rings around the end segments', () => {
+    // a tall, thick collar beside the bottom inner segment's waist
+    const collar = formMessages(
+      withParams((p) => {
+        p.forms.inner = ['waist'];
+        p.tubes.innerFormOD = 86;
+        p.base.collarHeight = 60;
+        p.base.collarWall = 10;
+      }),
+    );
+    expect(collar.map((x) => [x.code, x.path])).toEqual([['form-too-narrow', 'tubes.innerFormOD']]);
+    expect(collar[0]!.text).toContain('rod collar');
+    // only the bottom segment stands beside the collar
+    expect(
+      formMessages(
+        withParams((p) => {
+          p.forms.inner = ['straight', 'waist'];
+          p.tubes.innerFormOD = 86;
+          p.base.collarHeight = 60;
+          p.base.collarWall = 10;
+        }),
+      ),
+    ).toEqual([]);
+    // a short joint lets the cover's inner ring reach down to the top inner segment's ribs
+    const ring = formMessages(
+      withParams((p) => {
+        p.forms.inner = ['flute'];
+        p.segments.overlap = 5;
+      }),
+    );
+    expect(ring.map((x) => [x.code, x.path])).toEqual([['form-too-wide', 'tubes.innerFormOD']]);
+    expect(ring[0]!.text).toContain('capture ring');
+  });
+
+  it('round form profiles are validated per variant', () => {
+    for (const c of CASES) expect(deriveDims(c.params).messages.map((m) => m.code), c.name).not.toContain('profile-invalid');
+  });
+
+  it('is fast with four forms per stack (< 1 ms per call)', () => {
+    const p = caseParams('mixed forms');
+    for (let i = 0; i < 50; i++) deriveDims(p);
+    const n = 300;
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++) deriveDims(p);
+    const ms = (performance.now() - t0) / n;
+    console.log(`deriveDims with forms: ${ms.toFixed(3)} ms per call`);
+    expect(ms).toBeLessThan(1);
+  });
+});
+
 describe('placements and fit', () => {
   const p = defaultParams();
   const d = deriveDims(p);
@@ -251,5 +405,20 @@ describe('partsKey', () => {
     expect(partsKey(withParams((p) => (p.core.length = 1200)))).not.toBe(base);
     expect(partsKey(withParams((p) => (p.base.diameter = 230)))).not.toBe(base);
     expect(partsKey(withParams((p) => (p.printer.bedZ = 150)))).not.toBe(base);
+  });
+  it('follows the forms in use, not an unused form diameter', () => {
+    // every form straight: the form diameters and the overhang cap build nothing
+    expect(partsKey(withParams((p) => (p.tubes.innerFormOD = 120)))).toBe(base);
+    expect(partsKey(withParams((p) => (p.tubes.outerFormOD = 300)))).toBe(base);
+    expect(partsKey(withParams((p) => (p.segments.maxOverhang = 30)))).toBe(base);
+    expect(partsKey(withParams((p) => (p.forms.outer = ['straight'])))).toBe(base);
+    // a painted form is a new mesh, and then its diameter and cap matter
+    const ball = withParams((p) => (p.forms.outer = ['ball', 'straight']));
+    const key = partsKey(ball);
+    expect(key).not.toBe(base);
+    expect(partsKey(withParams((p) => (p.forms.outer = ['straight', 'ball'])))).not.toBe(key);
+    expect(partsKey({ ...ball, tubes: { ...ball.tubes, outerFormOD: 230 } })).not.toBe(key);
+    expect(partsKey({ ...ball, tubes: { ...ball.tubes, innerFormOD: 120 } })).toBe(key);
+    expect(partsKey({ ...ball, segments: { ...ball.segments, maxOverhang: 40 } })).not.toBe(key);
   });
 });

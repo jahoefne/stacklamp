@@ -78,7 +78,9 @@ A finished or failed `exportJob` resets to `idle` when the config changes.
 
 `#v=1&<key>=<value>…` with only non-default values, so the default lamp is `#v=1`. Numeric keys:
 `NUMERIC_URL_KEYS` (paramSpec.ts), e.g. `rl` rod length, `oo` outer OD, `ih`/`oh` segment
-heights. Enums: `cp hm wr pp nz`. Colours: `pal`, `bi`/`bo` (bands), `gi`/`go` (generators). Keys
+heights. Enums: `cp hm wr pp nz`. Colours: `pal`, `bi`/`bo` (bands), `gi`/`go` (generators).
+Forms: `fi`/`fo`, one `FORMS[id].code` per band fitted to N (`fo=bwbwb`), only when the stack is
+not all straight; the form diameters and maximum overhang are the numeric keys `ifd`/`ofd`/`mo`. Keys
 are never renamed. `decodeConfig` never throws, and its `issues` explain anything it clamped or
 ignored. On load and on a pasted link they appear as an info notice.
 

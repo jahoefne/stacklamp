@@ -11,12 +11,19 @@ import { assemblySection, overlapArea } from '../../src/geometry/section';
 import { PART_IDS, type ExportRequest } from '../../src/geometry/types';
 import { createHandler } from '../../src/worker/handler';
 import { getKernel, trackKernelObjects } from '../helpers/kernel';
-import { ledTube } from '../helpers/params';
+import { ledTube, withParams } from '../helpers/params';
 
 let k: Kernel;
 beforeAll(async () => {
   k = await getKernel();
 });
+
+/** Several forms on both stacks: several meshes per stack. */
+const formsLamp = () =>
+  withParams((p) => {
+    p.forms.inner = ['ball', 'straight', 'twist'];
+    p.forms.outer = ['barrel', 'star', 'straight', 'flute'];
+  });
 
 const request = (params = defaultParams()): ExportRequest => ({
   params,
@@ -33,7 +40,7 @@ describe('leaks', () => {
       const before = tracker.live();
       const scopedBefore = liveObjects();
       const h = createHandler(k);
-      for (const params of [defaultParams(), ledTube()]) {
+      for (const params of [defaultParams(), ledTube(), formsLamp()]) {
         h.buildParts(params, 'preview', PART_IDS);
         h.buildParts(params, 'export', PART_IDS);
         h.exportZip({ ...request(params), format: 'stl' });
@@ -62,6 +69,14 @@ describe('leaks', () => {
       proto.status = () => 'NotManifold';
       for (const id of PART_IDS) {
         expect(() => buildPartMesh(k, id, layout!.specs, 'preview', 1)).toThrow(BuildError);
+      }
+      // every form variant of both stacks frees what it created too
+      const specs = derive(formsLamp()).layout!.specs;
+      for (const [id, variants] of [
+        ['inner-segment', specs.variants.inner],
+        ['outer-segment', specs.variants.outer],
+      ] as const) {
+        for (const v of variants) expect(() => buildPartMesh(k, id, specs, 'preview', v.bands.length, v.form)).toThrow(BuildError);
       }
       proto.status = status;
       expect(() =>

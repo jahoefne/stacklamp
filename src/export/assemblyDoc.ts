@@ -6,7 +6,7 @@ import { BOSS_CLEARANCE } from '../geometry/layout';
 import type { DerivedDims } from '../geometry/types';
 import { num, table } from './format';
 import type { DocInput } from './printPlan';
-import { rodLine } from './printPlan';
+import { formsInUse, rodLine } from './printPlan';
 
 /** Width of the LED strip the estimates assume, mm. */
 export const STRIP_WIDTH = 10;
@@ -95,7 +95,11 @@ export function assemblyMarkdown(input: DocInput): string {
       ? `Route the tube's lead ${routing} before seating the tube.`
       : `Wrap the LED strip around the rod from the collar top (${num(zone[0])} mm) up to ${num(zone[1])} mm, where the cover boss begins: the top ${num(engagement)} mm of the rod slide into the boss and stay bare. Secure both ends.`,
     ...(tube ? [] : [`Route the strip's lead ${routing}. Connect it to the power supply outside the lamp.`]),
-    `Stack the ${dims.inner.count} inner segments onto the inner ring of the base, foot (socket) down, in the colour order of PRINT-PLAN.md (band 1 at the bottom). Each foot slides over the rim below and sits on its 45° shoulder.`,
+    `Stack the ${dims.inner.count} inner segments onto the inner ring of the base, foot (socket) down, ${
+      formsInUse(dims)
+        ? 'following the segment order in PRINT-PLAN.md (the form and colour of every band, band 1 at the bottom)'
+        : 'in the colour order of PRINT-PLAN.md (band 1 at the bottom)'
+    }. Each foot slides over the rim below and sits on its 45° shoulder.`,
     `Stack the ${dims.outer.count} outer segments onto the outer ring the same way.`,
     `Fit the cover: the boss goes over the ${tube ? 'tube' : 'rod'} end, the inner ring over the top inner segment, the outer ring over the top outer segment, whose rim bears on the cover plate. The ${tube ? 'tube' : 'rod'} ends ${num(dims.rod.endGap)} mm below the boss hole ceiling and the inner stack ${num(dims.cover.innerTopGap)} mm below the plate.`,
   ];

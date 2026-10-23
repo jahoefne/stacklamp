@@ -44,6 +44,12 @@ export const BUILTIN_PRESETS: readonly BuiltinPreset[] = [
     description: '2 m rod with 180 mm segments; mirrored amber-to-violet gradient.',
     code: 'v=1&rl=2000&ih=180&oh=180&go=g2345m',
   },
+  {
+    id: 'lantern-forms',
+    name: 'Lantern',
+    description: '1.5 m rod; a ball on every outer segment, 230 mm at the widest, around a twisted inner stack; amber, orange and red.',
+    code: 'v=1&ofd=230&fi=xxxxxxxxxxx&fo=bbbbbbbbbbb',
+  },
 ];
 
 export const MAX_PRESET_NAME = 40;

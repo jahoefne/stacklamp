@@ -12,6 +12,7 @@ import { WorkerGeometryClient, isBenignGeometryError, type WorkerLike } from '..
 import { createHandler } from '../../src/worker/handler';
 import type { WorkerRequest, WorkerResponse } from '../../src/worker/protocol';
 import { getKernel } from '../helpers/kernel';
+import { withParams } from '../helpers/params';
 
 class FakeWorker implements WorkerLike {
   onmessage: ((e: { data: WorkerResponse }) => void) | null = null;
@@ -195,6 +196,42 @@ describe('WorkerGeometryClient with the real handler in-process', () => {
     expect(fileName).toBe('stacklamp-L1500-D200-rod-o11x154.5-i11x154.3.zip');
     expect(Object.keys(unzipSync(zip))).toHaveLength(9);
     expect(stages).toContain('fit-test');
+    client.dispose();
+  });
+
+  it('carries one mesh per form through the worker protocol, with monotonic export progress', async () => {
+    const handler = createHandler(k);
+    const client = new WorkerGeometryClient(() => {
+      const w: WorkerLike = {
+        onmessage: null,
+        onerror: null,
+        postMessage(msg) {
+          setTimeout(() => handler.handle(msg, (res) => w.onmessage?.({ data: res })), 0);
+        },
+        terminate() {},
+      };
+      setTimeout(() => w.onmessage?.({ data: { type: 'ready' } }), 0);
+      return w;
+    });
+    await client.ready;
+    const params = withParams((p) => {
+      p.forms.inner = ['ball', 'straight'];
+      p.forms.outer = ['star'];
+    });
+    const parts = await client.buildParts(params, 'preview');
+    expect(parts.map((p) => [p.id, p.form ?? null, p.copies])).toEqual([
+      ['base', null, 1],
+      ['inner-segment', 'ball', 6],
+      ['inner-segment', 'straight', 5],
+      ['outer-segment', 'star', 11],
+      ['top-cover', null, 1],
+      ['plate-clamp', null, 1],
+    ]);
+    const progress: [ExportStage, number, number][] = [];
+    const { zip } = await client.exportZip({ ...req, params }, (s, done, total) => progress.push([s, done, total]));
+    expect(Object.keys(unzipSync(zip)).filter((n) => n.includes('segment'))).toEqual(['inner-segment-ball.3mf', 'inner-segment.3mf', 'outer-segment-star.3mf']);
+    expect(progress.map((p) => p[1])).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(progress.every((p) => p[2] === 8)).toBe(true);
     client.dispose();
   });
 });

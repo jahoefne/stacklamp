@@ -6,6 +6,7 @@ import type { LampState } from '../../state';
 import { Checkbox } from '../primitives/Checkbox';
 import { ParamNumberField } from '../primitives/ParamNumberField';
 import { fmt } from '../primitives/format';
+import { FormBandEditor } from './FormBandEditor';
 import { PanelSection } from './PanelSection';
 import panel from './panel.module.css';
 
@@ -13,7 +14,7 @@ const selectLinked = (s: LampState): boolean => s.ui.linkSegmentHeights;
 const selectAuto = (s: LampState): boolean => s.config.params.segments.heightMode === 'auto';
 const selectNozzle = (s: LampState): NozzlePreset => nozzleOf(s.config.params);
 
-/** 02 Tubes: diameters, wall, target segment heights. */
+/** 02 Tubes: diameters, wall, target segment heights, segment body forms. */
 export function TubesSection(): ReactElement {
   const linked = useLamp(selectLinked);
   const auto = useLamp(selectAuto);
@@ -37,6 +38,12 @@ export function TubesSection(): ReactElement {
           checked={linked}
           onChange={(v) => setUi({ linkSegmentHeights: v })}
         />
+      </div>
+      <div className={panel.group}>
+        <h3 className={panel.groupTitle}>Segment forms</h3>
+        <ParamNumberField path="tubes.outerFormOD" />
+        <ParamNumberField path="tubes.innerFormOD" />
+        <FormBandEditor />
       </div>
     </PanelSection>
   );

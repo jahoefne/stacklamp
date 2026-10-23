@@ -4,7 +4,9 @@
  * printed, but it must fit) and the rod. Revolved parts interfere in 3D
  * exactly when their profiles overlap in this half plane, so the
  * interference tests intersect these polygons (CrossSection) instead of
- * building and intersecting solids.
+ * building and intersecting solids. A segment is its form's envelope: the
+ * exact profile of a round form, the profile bounding every rib of a ribbed
+ * one (a conservative test there).
  */
 import { derive } from './derive';
 import type { Kernel } from './kernel';
@@ -13,7 +15,7 @@ import { flipProfile, translateProfile, type Profile } from './profile';
 import { baseProfile } from './profiles/base';
 import { clampProfile } from './profiles/clamp';
 import { coverProfile } from './profiles/cover';
-import { segmentProfile } from './profiles/segment';
+import { segmentEnvelope } from './profiles/forms';
 import type { LampParams, PartId } from './types';
 
 export interface SectionPiece {
@@ -30,12 +32,15 @@ export function assemblySection(p: LampParams, arcSegments = 8): SectionPiece[] 
   if (!layout) return [];
   const { specs } = layout;
   const out: SectionPiece[] = [{ name: 'base', part: 'base', index: 0, polygon: baseProfile(specs.base, arcSegments) }];
-  for (const [part, spec, s] of [
-    ['inner-segment', specs.inner, dims.inner],
-    ['outer-segment', specs.outer, dims.outer],
+  for (const [part, stack] of [
+    ['inner-segment', 'inner'],
+    ['outer-segment', 'outer'],
   ] as const) {
-    const prof = segmentProfile(spec);
+    const s = dims[stack];
+    const straight = segmentEnvelope(specs[stack]);
+    const byForm = new Map(specs.variants[stack].map((v) => [v.form, segmentEnvelope(v.spec)]));
     for (let k = 0; k < s.count; k++) {
+      const prof = byForm.get(s.forms[k] ?? 'straight') ?? straight;
       out.push({ name: `${part}#${k + 1}`, part, index: k, polygon: translateProfile(prof, s.stackBottomZ + k * s.pitch) });
     }
   }

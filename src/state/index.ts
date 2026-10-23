@@ -33,6 +33,7 @@ export {
   selectMessages,
   selectCounts,
   selectFittedBands,
+  selectFittedForms,
   selectStackBands,
   selectColourPlan,
   selectUsage,

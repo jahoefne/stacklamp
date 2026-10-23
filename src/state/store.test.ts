@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { NOZZLES, PRINTER_PRESETS, defaultParams, deriveDims } from '../geometry';
+import { NOZZLES, PRINTER_PRESETS, defaultParams, deriveDims, fitForms } from '../geometry';
+import type { FormId } from '../geometry';
 import { fitBands } from './bands';
 import { decodeConfig } from './codec';
 import { defaultConfig, defaultUiPrefs } from './config';
 import { generateBands } from './generators';
 import { DEFAULT_PALETTE, MAX_COLOURS } from './palette';
-import { selectDims, selectFittedBands } from './selectors';
+import { partsKeyFor, selectCode, selectDims, selectFittedBands, selectFittedForms } from './selectors';
 import { createLampStore } from './store';
 import type { LampStoreInit } from './store';
 
@@ -185,6 +186,106 @@ describe('colour bands', () => {
     expect(inner).toEqual([...inner].reverse());
     expect(inner.at(-1)).toBe('red');
     expect(inner.at(-2)).toBe('blu');
+  });
+});
+
+describe('segment forms', () => {
+  it('paintForm materialises the fitted list and sets one band (default: the form brush)', () => {
+    const store = make();
+    const { paintForm, setFormBrush } = store.getState().actions;
+    const n = selectDims(store.getState()).inner.count;
+    paintForm('inner', 2, 'twist');
+    const stored = store.getState().config.params.forms.inner;
+    expect(stored).toHaveLength(n);
+    expect(stored).toEqual(Array.from({ length: n }, (_, i) => (i === 2 ? 'twist' : 'straight')));
+    expect(selectFittedForms(store.getState(), 'inner')).toEqual(stored);
+    setFormBrush('waist');
+    paintForm('outer', 0);
+    expect(selectFittedForms(store.getState(), 'outer')[0]).toBe('waist');
+    expect(store.getState().config.params.forms.inner).toBe(stored);
+  });
+  it('paintForm repeats a short pattern to N and keeps the bands beyond N', () => {
+    const store = make();
+    const { paintForm, setForms } = store.getState().actions;
+    const n = selectDims(store.getState()).outer.count;
+    const long: FormId[] = Array.from({ length: n + 3 }, (_, i) => (i % 2 ? 'ball' : 'drop'));
+    setForms('outer', long);
+    paintForm('outer', 1, 'star');
+    const next = store.getState().config.params.forms.outer;
+    expect(next).toHaveLength(n + 3);
+    expect(next.slice(n)).toEqual(long.slice(n));
+    expect(next[1]).toBe('star');
+    setForms('inner', ['ball', 'straight']);
+    paintForm('inner', 0, 'flute');
+    const nInner = selectDims(store.getState()).inner.count;
+    expect(store.getState().config.params.forms.inner).toEqual(fitForms(['ball', 'straight'], nInner).map((f, i) => (i === 0 ? 'flute' : f)));
+  });
+  it('painted forms survive N shrinking and growing back', () => {
+    const store = make();
+    const { paintForm, setParam } = store.getState().actions;
+    const n0 = selectDims(store.getState()).outer.count;
+    paintForm('outer', n0 - 1, 'barrel');
+    setParam('core.length', 800);
+    expect(selectDims(store.getState()).outer.count).toBeLessThan(n0);
+    expect(selectFittedForms(store.getState(), 'outer').every((f) => f === 'straight')).toBe(true);
+    setParam('core.length', 1500);
+    expect(selectFittedForms(store.getState(), 'outer')[n0 - 1]).toBe('barrel');
+  });
+  it('paintForm ignores an out-of-range band, an unknown form and a band that already has the form', () => {
+    const store = make();
+    const { paintForm } = store.getState().actions;
+    const before = store.getState().config;
+    const n = selectDims(store.getState()).inner.count;
+    paintForm('inner', n, 'ball');
+    paintForm('inner', -1, 'ball');
+    paintForm('inner', 0.5, 'ball');
+    paintForm('inner', 0, 'bogus' as FormId);
+    paintForm('inner', 0, 'straight');
+    expect(store.getState().config).toBe(before);
+    paintForm('inner', 0, 'ball');
+    const painted = store.getState().config;
+    paintForm('inner', 0, 'ball');
+    expect(store.getState().config).toBe(painted);
+  });
+  it('setForms drops unknown ids', () => {
+    const store = make();
+    store.getState().actions.setForms('inner', ['ball', 'nope' as FormId, 'twist', '' as FormId]);
+    expect(store.getState().config.params.forms.inner).toEqual(['ball', 'twist']);
+    expect(store.getState().config.params.forms.outer).toEqual([]);
+  });
+  it('a forms change is a params change (new params, new parts key, new code); an equal list is not', () => {
+    const store = make();
+    const { setForms } = store.getState().actions;
+    const params = store.getState().config.params;
+    const key = partsKeyFor(params);
+    setForms('outer', ['ball']);
+    const s = store.getState();
+    expect(s.config.params).not.toBe(params);
+    expect(s.config.params.forms.outer).toEqual(['ball']);
+    expect(partsKeyFor(s.config.params)).not.toBe(key);
+    expect(selectCode(s)).toBe(`v=1&fo=${'b'.repeat(selectDims(s).outer.count)}`);
+    setForms('outer', ['ball']);
+    expect(store.getState().config).toBe(s.config);
+    setForms('outer', []);
+    expect(partsKeyFor(store.getState().config.params)).toBe(key);
+    expect(selectCode(store.getState())).toBe('v=1');
+  });
+  it('setFormBrush sets ui.formBrush and ignores unknown forms', () => {
+    const store = make();
+    const { setFormBrush } = store.getState().actions;
+    expect(store.getState().ui.formBrush).toBe(defaultUiPrefs().formBrush);
+    setFormBrush('twist');
+    expect(store.getState().ui.formBrush).toBe('twist');
+    const ui = store.getState().ui;
+    setFormBrush('twist');
+    setFormBrush('bogus' as FormId);
+    expect(store.getState().ui).toBe(ui);
+  });
+  it('resetAll straightens the forms', () => {
+    const store = make();
+    store.getState().actions.setForms('inner', ['ball']);
+    store.getState().actions.resetAll();
+    expect(store.getState().config.params.forms).toEqual({ inner: [], outer: [] });
   });
 });
 

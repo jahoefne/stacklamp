@@ -1,15 +1,19 @@
 /**
  * Worker handler (no worker globals, runs in Node): PartMesh cache keyed by
- * part + quality + spec, fresh transferable buffers, responses and progress.
+ * part + form + quality + spec, one mesh per form of a segment stack, fresh
+ * transferable buffers, responses and progress.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Kernel } from '../../src/geometry/kernel';
 import { defaultParams } from '../../src/geometry/params';
-import type { PartMesh } from '../../src/geometry/types';
-import { createHandler, meshTransfers } from '../../src/worker/handler';
+import type { ExportStage, PartId, PartMesh } from '../../src/geometry/types';
+import { DEFAULT_CACHE_SIZE, createHandler, meshTransfers } from '../../src/worker/handler';
 import type { WorkerResponse } from '../../src/worker/protocol';
 import { getKernel } from '../helpers/kernel';
 import { withParams } from '../helpers/params';
+
+/** Inner bands fitted from ['ball', 'straight', 'ball']: 7 balls and 4 straight over 11 segments. */
+const ballLamp = () => withParams((p) => (p.forms.inner = ['ball', 'straight', 'ball']));
 
 let k: Kernel;
 beforeAll(async () => {
@@ -35,6 +39,17 @@ describe('GeometryHandler', () => {
     // quality is part of the key
     h.buildParts(defaultParams(), 'export');
     expect(h.stats.misses).toBe(11);
+  });
+
+  it('keeps 16 meshes by default', () => {
+    expect(DEFAULT_CACHE_SIZE).toBe(16);
+    // a lamp with forms at both qualities: 6 meshes each, all still cached on the next round
+    const h = createHandler(k);
+    for (const q of ['preview', 'export'] as const) h.buildParts(ballLamp(), q);
+    expect(h.cacheKeys).toHaveLength(12);
+    const misses = h.stats.misses;
+    for (const q of ['preview', 'export'] as const) h.buildParts(ballLamp(), q);
+    expect(h.stats.misses).toBe(misses);
   });
 
   it('is an LRU of 8 entries', () => {
@@ -63,6 +78,60 @@ describe('GeometryHandler', () => {
     const transfers = meshTransfers(a);
     expect(transfers).toHaveLength(15);
     expect(new Set(transfers).size).toBe(15);
+  });
+
+  it('builds one mesh per form of a stack, in order of first appearance, and caches each', () => {
+    const h = createHandler(k);
+    const seen: [PartId, number][] = [];
+    const parts = h.buildParts(ballLamp(), 'preview', undefined, (id, i) => seen.push([id, i]));
+    expect(parts.map((m) => [m.id, m.form ?? null, m.copies])).toEqual([
+      ['base', null, 1],
+      ['inner-segment', 'ball', 7],
+      ['inner-segment', 'straight', 4],
+      ['outer-segment', 'straight', 11],
+      ['top-cover', null, 1],
+      ['plate-clamp', null, 1],
+    ]);
+    expect(seen).toEqual(parts.map((m, i) => [m.id, i]));
+    expect(h.stats).toMatchObject({ hits: 0, misses: 6 });
+    expect(Object.keys(h.stats.lastMs)).toEqual(
+      expect.arrayContaining(['inner-segment#ball|preview', 'inner-segment|preview', 'outer-segment|preview']),
+    );
+    expect(Object.keys(h.stats.lastMs)).not.toContain('inner-segment#straight|preview');
+    // the same lamp again: every mesh from the cache, with fresh buffers
+    const again = h.buildParts(ballLamp(), 'preview');
+    expect(h.stats).toMatchObject({ hits: 6, misses: 6 });
+    expect(again.map((m) => [m.id, m.form ?? null, m.copies])).toEqual(parts.map((m) => [m.id, m.form ?? null, m.copies]));
+    expect(again[1]!.positions).not.toBe(parts[1]!.positions);
+    // the default lamp shares the straight inner mesh: only base … clamp hit, nothing rebuilt
+    h.buildParts(defaultParams(), 'preview');
+    expect(h.stats).toMatchObject({ hits: 11, misses: 6 });
+    // a different pattern with the same forms reuses both meshes with new copy counts
+    const swapped = h.buildParts(withParams((p) => (p.forms.inner = ['straight', 'ball'])), 'preview');
+    expect(h.stats.misses).toBe(6);
+    expect(swapped.filter((m) => m.id === 'inner-segment').map((m) => [m.form, m.copies])).toEqual([
+      ['straight', 6],
+      ['ball', 5],
+    ]);
+  });
+
+  it('counts export progress per mesh', () => {
+    const h = createHandler(k);
+    const steps: [ExportStage, number, number][] = [];
+    h.exportZip(
+      {
+        params: ballLamp(),
+        colourPlan: { palette: [], inner: [], outer: [] },
+        format: '3mf',
+        includeFitTest: true,
+        meta: { shareUrl: '', appVersion: 'test', createdAt: '2026-10-22T12:00:00.000Z' },
+      },
+      (stage, done, total) => steps.push([stage, done, total]),
+    );
+    // 7 meshes (two inner forms) + docs + zip
+    expect(steps.map((s) => s[0])).toEqual(['base', 'inner-segment', 'inner-segment', 'outer-segment', 'top-cover', 'plate-clamp', 'fit-test', 'docs', 'zip', 'zip']);
+    expect(steps.every((s) => s[2] === 9)).toBe(true);
+    expect(steps.map((s) => s[1])).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   });
 
   it('posts parts, progress and errors', () => {

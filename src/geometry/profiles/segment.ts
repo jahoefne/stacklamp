@@ -8,26 +8,22 @@
  *
  * A segment sits on the one below at seatZ = ov + c + λ: its shoulder's inner
  * cone coincides with the lower rim's outer cone.
+ *
+ * Between the shoulder and the next segment's socket the body takes the
+ * segment's form (profiles/forms.ts): round forms replace both body lines by
+ * the form's curve, ribbed forms keep them straight with a ring every few mm
+ * for the builder's warp. Foot, shoulder, rim and the straight stretches next
+ * to them are the same for every form.
  */
-import { dedupe, type Profile } from '../profile';
+import { FORMS } from '../forms';
 import type { SegmentSpec } from '../layout';
+import type { Profile } from '../profile';
+import { jointProfile, ribbedProfile, roundFormProfile } from './forms';
 
 export function segmentProfile(s: SegmentSpec): Profile {
-  const R = s.D / 2;
-  const { wall: w, overlap: ov, clearance: c, leadIn: l, height: H } = s;
-  return dedupe([
-    [R + c, 0],
-    [R + c + w, 0],
-    [R + c + w, ov],
-    [R, ov + w + c],
-    [R, H - l],
-    [R - l, H],
-    [R - l - w, H],
-    [R - w, H - l],
-    [R - w, ov + w + c],
-    [R + c, ov],
-  ]);
+  if (s.form === 'straight') return jointProfile(s);
+  return FORMS[s.form].round ? roundFormProfile(s) : ribbedProfile(s);
 }
 
 /** Seat height of the joint: ov + c + λ. */
-export const seatHeight = (s: SegmentSpec): number => s.overlap + s.clearance + s.leadIn;
+export { seatHeight } from './forms';

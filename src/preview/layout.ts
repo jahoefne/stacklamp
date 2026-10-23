@@ -15,7 +15,10 @@ export type Offset = [number, number, number];
 
 /** Vertical gap added per segment index in the exploded view (mm). */
 export const EXPLODE_STEP_MM = 30;
-/** Clearance between the inner assembly and the outer stack moved aside (mm, added to outerOD). */
+/**
+ * Clearance between the inner assembly and the outer stack moved aside (mm, added to the
+ * outer stack's widest point, so a bulging form never touches the base or the inner stack).
+ */
 export const OUTER_SIDE_GAP_MM = 80;
 /** Outer glow level in the "inner" view (a faint ghost of the outer stack). */
 export const INNER_VIEW_GHOST = 0.08;
@@ -39,7 +42,7 @@ export function computeLayout(dims: DerivedDims, mode: ViewMode): LayoutState {
   const n = (id: LampPartId) => copyCount(dims, id);
   const exploded = mode === 'exploded';
   const step = exploded ? EXPLODE_STEP_MM : 0;
-  const outerShift = exploded ? dims.outer.D + OUTER_SIDE_GAP_MM : 0;
+  const outerShift = exploded ? outerSideShift(dims) : 0;
   const topIndex = Math.max(n('inner-segment'), n('outer-segment')) + 1;
   return {
     offsets: {
@@ -53,6 +56,11 @@ export function computeLayout(dims: DerivedDims, mode: ViewMode): LayoutState {
     outerGlow: mode === 'inner' ? INNER_VIEW_GHOST : 1,
     outerSheen: mode === 'inner' ? 0 : 1,
   };
+}
+
+/** How far the exploded view moves the outer stack aside (mm): its widest point plus the gap. */
+export function outerSideShift(dims: DerivedDims): number {
+  return dims.outer.maxOD + OUTER_SIDE_GAP_MM;
 }
 
 export function easeOutCubic(t: number): number {
@@ -118,12 +126,16 @@ export function applyLayout(copies: PartCopies, dims: DerivedDims, layout: Layou
   }
 }
 
-/** What the camera must show for a mode, in metres. */
+/**
+ * What the camera must show for a mode, in metres. The radius covers the widest point of
+ * both stacks (`maxOD`: a bulging form can stand out past the base and the cover).
+ */
 export function layoutBounds(dims: DerivedDims, mode: ViewMode): FrameBounds {
   const radiusMm = Math.max(
     (dims.fit.base?.size[0] ?? 0) / 2,
     dims.cover.od / 2,
-    dims.outer.socketOD / 2,
+    dims.outer.maxOD / 2,
+    dims.inner.maxOD / 2,
     1,
   );
   let heightMm = dims.totalHeight;
@@ -133,7 +145,7 @@ export function layoutBounds(dims: DerivedDims, mode: ViewMode): FrameBounds {
     const nOut = copyCount(dims, 'outer-segment');
     const coverLift = (Math.max(nIn, nOut) + 1) * EXPLODE_STEP_MM;
     heightMm = Math.max(dims.totalHeight + coverLift, dims.outer.topZ + Math.max(0, nOut - 1) * EXPLODE_STEP_MM);
-    maxXMm = dims.outer.D + OUTER_SIDE_GAP_MM + dims.outer.socketOD / 2;
+    maxXMm = outerSideShift(dims) + dims.outer.maxOD / 2;
   }
   return { height: heightMm / 1000, minX: -radiusMm / 1000, maxX: maxXMm / 1000, radius: radiusMm / 1000 };
 }

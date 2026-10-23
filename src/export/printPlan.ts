@@ -6,10 +6,12 @@
 import { PRINTER_PRESETS, nozzleOf } from '../geometry/params';
 import { computeBom, FILAMENT_DIAMETER_MM, PETG_DENSITY_G_CM3 } from '../geometry/bom';
 import { supportVolume } from '../geometry/estimate';
+import { DEFAULT_FORM, FORMS, allStraight, partFileStem } from '../geometry/forms';
 import { PART_LABELS } from '../geometry/messages';
 import { BASE_WALLS, COVER_WALLS, baseShellLayers } from '../geometry/print';
-import type { DerivedDims, ExportRequest, PartId, PartMesh } from '../geometry/types';
-import { colourById, colourSummary } from './colours';
+import type { DerivedDims, ExportRequest, FormId, PartMesh } from '../geometry/types';
+import { FORM_IDS } from '../geometry/types';
+import { colourById, colourSummary, meshColours } from './colours';
 import { fixed, int, num, percent, table, yesNo } from './format';
 
 /** Margin Bambu Studio's auto-arrange keeps around a part with supports, mm (observed). */
@@ -18,14 +20,33 @@ export const ARRANGE_MARGIN = 12;
 export interface DocInput {
   req: ExportRequest;
   dims: DerivedDims;
-  /** Export-quality meshes of the parts in the ZIP. */
+  /** Export-quality meshes in ZIP order (a segment stack has one per form in use). */
   parts: readonly PartMesh[];
-  /** File name of each part in the ZIP. */
-  files: Partial<Record<PartId, string>>;
+  /** File name of each mesh in the ZIP. */
+  files: ReadonlyMap<PartMesh, string>;
 }
 
-const bandsOf = (req: ExportRequest, id: PartId): string[] =>
-  id === 'inner-segment' ? req.colourPlan.inner : id === 'outer-segment' ? req.colourPlan.outer : [];
+/** True when a stack has a form other than straight. */
+export const stackHasForms = (s: Pick<DerivedDims['inner'], 'forms'>): boolean => !allStraight(s.forms ?? []);
+
+/** True when either stack has a form other than straight (the documents then give the segment order). */
+export const formsInUse = (dims: Pick<DerivedDims, 'inner' | 'outer'>): boolean => stackHasForms(dims.inner) || stackHasForms(dims.outer);
+
+/** `Inner segment`, `Inner segment (Ball)`: the part label, with a form other than straight. */
+export const meshLabel = (m: Pick<PartMesh, 'id' | 'form'>): string =>
+  m.form && m.form !== DEFAULT_FORM ? `${PART_LABELS[m.id]} (${FORMS[m.form].label})` : PART_LABELS[m.id];
+
+/** "Star", "Star and Fluted", "Star, Fluted and Twist". */
+function listText(items: readonly string[]): string {
+  return items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)!}`;
+}
+
+/** "Ball × 2, Straight × 1" in order of first appearance. */
+function formSummary(forms: readonly FormId[]): string {
+  const counts = new Map<FormId, number>();
+  for (const f of forms) counts.set(f, (counts.get(f) ?? 0) + 1);
+  return [...counts.entries()].map(([f, n]) => `${FORMS[f].label} × ${n}`).join(', ');
+}
 
 export function rodLine(req: ExportRequest, dims: DerivedDims): string {
   const p = req.params;
@@ -52,7 +73,8 @@ export function printPlanMarkdown(input: DocInput): string {
 
   out.push('## Summary', '');
   const stack = (s: DerivedDims['outer']): string =>
-    `${s.count} × ${num(s.height)} mm segments, Ø ${num(s.D)} mm, pitch ${num(s.pitch)} mm (${percent(s.deviation)} from the ${num(s.targetHeight)} mm target)`;
+    `${s.count} × ${num(s.height)} mm segments, Ø ${num(s.D)} mm, pitch ${num(s.pitch)} mm (${percent(s.deviation)} from the ${num(s.targetHeight)} mm target)` +
+    (stackHasForms(s) ? `; forms ${formSummary(s.forms)}, Ø ${num(s.maxOD)} mm at the widest` : '');
   out.push(
     table(
       ['Item', 'Value'],
@@ -77,7 +99,10 @@ export function printPlanMarkdown(input: DocInput): string {
       ['Part', 'Size (mm)', 'Fits bed', 'Fits height'],
       parts.map((m) => {
         const f = dims.fit[m.id];
-        return [PART_LABELS[m.id], f.size.map((v) => num(v)).join(' × '), yesNo(f.fitsBed), yesNo(f.fitsZ)];
+        // a stack with forms: each mesh's own footprint (the stack's fit is its widest form)
+        const ownSize = (m.id === 'inner-segment' && stackHasForms(dims.inner)) || (m.id === 'outer-segment' && stackHasForms(dims.outer));
+        const size = ownSize ? [0, 1, 2].map((i) => num(m.bbox.max[i]! - m.bbox.min[i]!, 1)) : f.size.map((v) => num(v));
+        return [meshLabel(m), size.join(' × '), yesNo(f.fitsBed), yesNo(f.fitsZ)];
       }),
     ),
     '',
@@ -88,11 +113,11 @@ export function printPlanMarkdown(input: DocInput): string {
     table(
       ['File', 'Part', 'Copies', 'Colours', 'Triangles', 'Volume each (cm³)', 'Solid each (g)', 'Estimate each (g)', 'Estimate total (g)'],
       parts.map((m) => {
-        const bands = bandsOf(req, m.id);
+        const bands = meshColours(plan, dims, m);
         const colours = bands.length > 0 ? colourSummary(plan, bands) : m.id === 'fit-test' ? 'any (test colour)' : 'any (opaque recommended)';
         return [
-          files[m.id] ?? m.id,
-          PART_LABELS[m.id],
+          files.get(m) ?? `${partFileStem(m.id, m.form)}.${req.format}`,
+          meshLabel(m),
           String(m.copies),
           colours,
           int(m.triangleCount),
@@ -114,6 +139,7 @@ export function printPlanMarkdown(input: DocInput): string {
     '',
   );
 
+  const withForms = formsInUse(dims);
   if (bom.colours.length > 0) {
     out.push('### Filament per colour', '');
     out.push(
@@ -127,10 +153,28 @@ export function printPlanMarkdown(input: DocInput): string {
       ),
       '',
     );
+  }
+  if (withForms) {
+    // which file and which colour goes where: a form is its own file
+    out.push('### Segment order (bottom → top)', '');
+    const order = (id: 'inner-segment' | 'outer-segment', s: DerivedDims['inner'], bands: readonly string[]) =>
+      table(
+        ['Band', 'Form', 'Colour', 'File'],
+        (s.forms ?? []).map((f, k) => {
+          const colour = bands[k];
+          return [String(k + 1), FORMS[f].label, colour === undefined ? '–' : colourById(plan, colour).name, `${partFileStem(id, f)}.${req.format}`];
+        }),
+        ['r', 'l', 'l', 'l'],
+      );
+    out.push('**Outer stack**', '', order('outer-segment', dims.outer, plan.outer), '');
+    out.push('**Inner stack**', '', order('inner-segment', dims.inner, plan.inner), '');
+  } else if (bom.colours.length > 0) {
     out.push('### Colour order (bottom → top)', '');
     const order = (bands: readonly string[]) => bands.map((id, i) => `${i + 1}. ${colourById(plan, id).name}`).join('  \n');
     out.push(`**Outer stack**  \n${order(plan.outer)}`, '');
     out.push(`**Inner stack**  \n${order(plan.inner)}`, '');
+  }
+  if (bom.colours.length > 0) {
     out.push('Slicers ignore the colours stored in the 3MF files (they are a viewer hint only): load the filament for each print yourself.', '');
   }
 
@@ -142,6 +186,9 @@ export function printPlanMarkdown(input: DocInput): string {
   // the classic wall generator lays two line-width loops into the single wall
   const loops = (2 * nz.lineWidth) / p.segments.wall;
   const classic = loops >= 1.2 ? `about ${num(Math.round(loops * 2) / 2)}× the material and oversized` : 'oversized';
+  // forms that warp the revolved body (star, flute, twist), in catalogue order
+  const used = new Set([...(dims.inner.forms ?? []), ...(dims.outer.forms ?? [])]);
+  const ribbed = FORM_IDS.filter((f) => used.has(f) && !FORMS[f].round);
   out.push('## Slicer settings', '');
   out.push(
     [
@@ -162,6 +209,16 @@ export function printPlanMarkdown(input: DocInput): string {
       '- Brim 5 mm on the outer segments (tall and thin); none needed on the inner ones.',
       `- **Elephant-foot compensation 0.** In vase mode it pulls the single line inward and narrows the socket mouth: 0.15 mm would leave ${num(Math.max(0, c - 0.15))} mm instead of ${num(c)} mm clearance around the rim below.`,
       '- Print the foot (socket) down, as exported.',
+      ...(withForms
+        ? [
+            `- Segments with a form print the same way, in spiral vase mode and without supports: the form leaves the joint alone, and no flank leans outwards more than ${num(p.segments.maxOverhang)}° from vertical.`,
+          ]
+        : []),
+      ...(ribbed.length > 0
+        ? [
+            `- ${listText(ribbed.map((f) => FORMS[f].label))} bodies are not round: the single vase line traces their ridges, and sharp points come out rounded by about half the line width (${num(p.segments.wall / 2)} mm).`,
+          ]
+        : []),
       `- Normal (non-vase) mode works too with 1 wall and **Wall generator = Arachne**: the classic generator prints the wall as two overlapping ${num(nz.lineWidth)} mm loops, ${classic}.`,
       ...(req.includeFitTest
         ? [

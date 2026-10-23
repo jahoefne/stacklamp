@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deriveDims } from '../geometry';
+import { FORMS, deriveDims, fitForms } from '../geometry';
 import { decodeConfig, encodeConfigAuto } from './codec';
 import { BUILTIN_PRESETS, cleanPresetName, findPreset, parseSavedPresets, upsertPreset } from './presets';
 
@@ -7,7 +7,7 @@ describe('built-in presets', () => {
   it('have unique ids and names; classic-1500 is the default lamp', () => {
     expect(new Set(BUILTIN_PRESETS.map((p) => p.id)).size).toBe(BUILTIN_PRESETS.length);
     expect(new Set(BUILTIN_PRESETS.map((p) => p.name)).size).toBe(BUILTIN_PRESETS.length);
-    expect(BUILTIN_PRESETS.map((p) => p.id)).toEqual(['classic-1500', 'a1-mini-compact', 'led-tube-28', 'tall-2000']);
+    expect(BUILTIN_PRESETS.map((p) => p.id)).toEqual(['classic-1500', 'a1-mini-compact', 'led-tube-28', 'tall-2000', 'lantern-forms']);
     expect(BUILTIN_PRESETS[0]!.code).toBe('v=1');
   });
   for (const preset of BUILTIN_PRESETS) {
@@ -35,6 +35,19 @@ describe('built-in presets', () => {
     expect(c.params.core).toMatchObject({ kind: 'led-tube', diameter: 28, length: 1200 });
     expect(c.gen.outer).toEqual({ kind: 'gradient', colours: ['blu', 'tea', 'grn'] });
     expect(c.params.cover.innerSlits).toBe(0);
+  });
+  it('lantern-forms has forms on both stacks and a form diameter, and re-encodes to its own code', () => {
+    const preset = BUILTIN_PRESETS.find((p) => p.id === 'lantern-forms')!;
+    const r = decodeConfig(preset.code)!;
+    expect(r.issues).toEqual([]);
+    expect(encodeConfigAuto(r.config)).toBe(preset.code);
+    const p = r.config.params;
+    expect(p.tubes.outerFormOD).toBe(230);
+    const dims = deriveDims(p);
+    expect(fitForms(p.forms.inner, dims.inner.count)).toEqual(dims.inner.forms);
+    expect(new Set(dims.inner.forms)).toEqual(new Set(['twist']));
+    expect(new Set(dims.outer.forms)).toEqual(new Set(['ball']));
+    expect(preset.code).toContain(`fi=${FORMS.twist.code.repeat(dims.inner.count)}`);
   });
 });
 

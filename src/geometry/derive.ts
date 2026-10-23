@@ -13,7 +13,9 @@ import {
   socketOD,
   type Layout,
   type SegmentSpec,
+  type SegmentVariant,
 } from './layout';
+import { FORMS } from './forms';
 import { PART_LABELS, bedFitCode, errorMessage, message, sortMessages, zFitCode } from './messages';
 import { NOZZLES, NOZZLE_IDS, PARAM_META, nozzleOf } from './params';
 import { flipAt, identity, translateZ } from './placements';
@@ -21,6 +23,7 @@ import { profileProblem } from './profile';
 import { baseProfile } from './profiles/base';
 import { clampProfile } from './profiles/clamp';
 import { coverProfile } from './profiles/cover';
+import { effectiveAmplitude, formAmplitude, formRadiusRange, formZone, segmentRMax } from './profiles/forms';
 import { segmentProfile } from './profiles/segment';
 import { BED_Z_MARGIN, INNER_GAP_RANGE, ROD_GAP_SLACK, type StackSolution } from './solver';
 import type { DerivedDims, FormId, LampParams, Message, PartId, SegmentDims } from './types';
@@ -32,7 +35,14 @@ export interface Derivation {
   layout: Layout | null;
 }
 
+/** Radial clearance a form keeps to the other stack, the rod collar and the cover's boss and inner ring, mm. */
+const FORM_GAP = 2;
+/** A form scaled down by less than this (radially, mm) is not reported as squeezed. */
+const SQUEEZE_TOLERANCE = 0.05;
+
 const f1 = (v: number): string => String(Math.round(v * 10) / 10);
+/** Round down to 0.1 (a stated maximum must not round up past the limit). */
+const floor1 = (v: number): number => Math.floor(v * 10 + 1e-9) / 10;
 const f2 = (v: number): string => String(Math.round(v * 100) / 100);
 const pct = (v: number): string => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)} %`;
 
@@ -71,12 +81,15 @@ function segmentDims(
   sol: StackSolution,
   spec: SegmentSpec,
   forms: FormId[],
+  variants: readonly SegmentVariant[],
   stackBottomZ: number,
   zt: number,
   ringHeight: number,
 ): SegmentDims {
   const { count, height, pitch } = sol.fit;
   const socket = socketOD(spec);
+  let maxOD = socket;
+  for (const v of variants) if (v.bands.length > 0) maxOD = Math.max(maxOD, 2 * segmentRMax(v.spec));
   return {
     count,
     height,
@@ -88,8 +101,8 @@ function segmentDims(
     stackBottomZ,
     topZ: zt + ringHeight + count * pitch,
     forms,
-    // The form envelopes (profiles/forms.ts) widen this once the forms are built.
-    maxOD: socket,
+    // the widest form envelope in use (profiles/forms.ts), at least the socket
+    maxOD,
   };
 }
 
@@ -105,8 +118,8 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
   const stackBottomZ = zt + p.base.footGap;
   const isTube = p.core.kind === 'led-tube';
 
-  const outer = segmentDims(solved.outer, specs.outer, layout.forms.outer, stackBottomZ, zt, ringHeight);
-  const inner = segmentDims(solved.inner, specs.inner, layout.forms.inner, stackBottomZ, zt, ringHeight);
+  const outer = segmentDims(solved.outer, specs.outer, layout.forms.outer, specs.variants.outer, stackBottomZ, zt, ringHeight);
+  const inner = segmentDims(solved.inner, specs.inner, layout.forms.inner, specs.variants.inner, stackBottomZ, zt, ringHeight);
 
   // ------------------------------------------------------------ stacks
   const Pmin = window.Hmin - seatZ;
@@ -233,6 +246,7 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
   } else if (cs.innerRing.rOut + 2 > cs.outerRing.rIn) {
     msgs.push(message('tubes-too-close', 'The cover rings of the inner and outer tube overlap.', 'tubes.innerOD'));
   }
+  msgs.push(...formMessages(p, layout, { inner, outer, coreReach, stackBottomZ }));
 
   // ------------------------------------------------------------ base
   const bs = specs.base;
@@ -364,6 +378,19 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
   for (const [id, make] of profiles) {
     const problem = profileProblem(make());
     if (problem) msgs.push(message('profile-invalid', `${PART_LABELS[id]} cannot be built (${problem}).`));
+  }
+  // round forms change the profile (ribbed ones only add rings to the straight one)
+  for (const [id, stack, path] of [
+    ['inner-segment', 'inner', 'tubes.innerFormOD'],
+    ['outer-segment', 'outer', 'tubes.outerFormOD'],
+  ] as const) {
+    for (const v of specs.variants[stack]) {
+      if (v.form === 'straight' || !FORMS[v.form].round || v.bands.length === 0) continue;
+      const problem = profileProblem(segmentProfile(v.spec));
+      if (problem) {
+        msgs.push(message('profile-invalid', `${PART_LABELS[id]} (${FORMS[v.form].label.toLowerCase()}) cannot be built (${problem}).`, path));
+      }
+    }
   }
 
   // ------------------------------------------------------------ info
@@ -508,6 +535,136 @@ function deriveUnsafe(p: LampParams, initial: Message[]): Derivation {
     fit,
   };
   return { dims, layout };
+}
+
+/**
+ * The form checks: a squeezed form (warning), and the 2 mm radial rules of a form
+ * against the other stack, the rod and the parts around the end segments: the rod
+ * collar beside the bottom inner segment, the cover's boss and inner capture ring
+ * around the top ones (errors). The bed is checked with every other part, through
+ * maxOD.
+ */
+function formMessages(
+  p: LampParams,
+  layout: Layout,
+  ctx: { inner: SegmentDims; outer: SegmentDims; coreReach: number; stackBottomZ: number },
+): Message[] {
+  const out: Message[] = [];
+  const { specs, base: bl } = layout;
+  const cs = specs.cover;
+  const w = p.segments.wall;
+  const lead = p.segments.rimLeadIn;
+  const Ri = p.tubes.innerOD / 2;
+  const Ro = p.tubes.outerOD / 2;
+  const used = (vs: readonly SegmentVariant[]) => vs.filter((v) => v.bands.length > 0);
+  const innerVariants = used(specs.variants.inner);
+  const outerVariants = used(specs.variants.outer);
+  const waistDepth = (v: SegmentVariant) => (v.form === 'waist' ? effectiveAmplitude(v.spec) : 0);
+  const core = p.core.kind === 'led-tube' ? 'LED tube' : 'rod and LED strip';
+
+  for (const [name, path, variants] of [
+    ['Inner', 'tubes.innerFormOD', innerVariants],
+    ['Outer', 'tubes.outerFormOD', outerVariants],
+  ] as const) {
+    for (const v of variants) {
+      const a = formAmplitude(v.spec);
+      const reached = effectiveAmplitude(v.spec);
+      if (a - reached <= SQUEEZE_TOLERANCE) continue;
+      const D = v.spec.D;
+      out.push(
+        message(
+          'form-squeezed',
+          v.form === 'waist'
+            ? `${name} waist segments are too short to narrow to ${f1(D - 2 * a)} mm; the waist reaches ${f1(D - 2 * reached)} mm.`
+            : `${name} ${FORMS[v.form].label.toLowerCase()} segments are too short for a ${f1(D + 2 * a)} mm form; it reaches ${f1(D + 2 * reached)} mm.`,
+          path,
+        ),
+      );
+    }
+  }
+
+  // ------------------------------------------------ the stacks and the rod
+  const innerSocketR = socketOD(specs.inner) / 2;
+  let innerWidest = innerSocketR;
+  for (const v of innerVariants) innerWidest = Math.max(innerWidest, segmentRMax(v.spec));
+  const straightInside = Ro - w - lead;
+  let outerInside = straightInside;
+  for (const v of outerVariants) outerInside = Math.min(outerInside, straightInside - waistDepth(v));
+  if (innerWidest > innerSocketR + 1e-9 && innerWidest + FORM_GAP > outerInside + 1e-9) {
+    out.push(
+      message(
+        'form-too-wide',
+        `The inner forms (${f1(2 * innerWidest)} mm) run into the outer segments; the inner form diameter can be at most ${f1(floor1(2 * (outerInside - FORM_GAP)))} mm.`,
+        'tubes.innerFormOD',
+      ),
+    );
+  }
+  const innerStraightInside = Ri - w - lead;
+  for (const v of innerVariants) {
+    const depth = waistDepth(v);
+    // a tube too narrow even when straight is core-vs-inner-tube
+    if (depth <= 0 || innerStraightInside < ctx.coreReach || innerStraightInside - depth >= ctx.coreReach - 1e-9) continue;
+    out.push(
+      message(
+        'form-too-narrow',
+        `An inner waist down to ${f1(2 * (Ri - depth))} mm leaves no room for the ${core}; with a waist the inner form diameter can be at most ${f1(floor1(v.spec.D + 2 * (innerStraightInside - ctx.coreReach)))} mm.`,
+        'tubes.innerFormOD',
+      ),
+    );
+  }
+  for (const v of outerVariants) {
+    const depth = waistDepth(v);
+    const room = straightInside - FORM_GAP - innerWidest;
+    if (depth <= 0 || room < 0 || room - depth >= -1e-9) continue;
+    out.push(
+      message(
+        'form-too-narrow',
+        `An outer waist down to ${f1(2 * (Ro - depth))} mm runs into the inner segments; with a waist the outer form diameter can be at most ${f1(floor1(v.spec.D + 2 * room))} mm.`,
+        'tubes.outerFormOD',
+      ),
+    );
+  }
+
+  // ------------------------------------------------ the parts around the end segments
+  // radius range of band k's form over a world z range, null when its zone is not there
+  const rangeAt = (stack: 'inner' | 'outer', k: number, zLo: number, zHi: number): { form: FormId; range: [number, number] } | null => {
+    const d = ctx[stack];
+    const form = d.forms[k];
+    const spec = form && specs.variants[stack].find((v) => v.form === form)?.spec;
+    if (!form || !spec || form === 'straight') return null;
+    const bottom = ctx.stackBottomZ + k * d.pitch;
+    const { z0, z1 } = formZone(spec);
+    const lo = Math.max(z0, zLo - bottom);
+    const hi = Math.min(z1, zHi - bottom);
+    return lo < hi ? { form, range: formRadiusRange(spec, lo, hi) } : null;
+  };
+  const plate = ctx.outer.topZ;
+  // a waist is blamed only where the straight tube would clear (the other checks cover the rest)
+  const waistHits = (hit: { form: FormId; range: [number, number] } | null, R: number, r: number): boolean =>
+    hit?.form === 'waist' && R - w >= r + FORM_GAP && hit.range[0] - w < r + FORM_GAP;
+  const collar = rangeAt('inner', 0, bl.height, bl.height + p.base.collarHeight);
+  if (waistHits(collar, Ri, bl.collarR)) {
+    out.push(
+      message('form-too-narrow', `The bottom inner segment's waist runs into the rod collar (${f1(2 * bl.collarR)} mm).`, 'tubes.innerFormOD'),
+    );
+  }
+  const innerTop = ctx.inner.count - 1;
+  const boss = rangeAt('inner', innerTop, plate - p.cover.bossHeight, plate);
+  if (waistHits(boss, Ri, cs.boss.rOut)) {
+    out.push(
+      message('form-too-narrow', `The top inner segment's waist runs into the cover boss (${f1(2 * cs.boss.rOut)} mm).`, 'tubes.innerFormOD'),
+    );
+  }
+  const ringLo = plate - cs.innerRing.height;
+  const innerRing = rangeAt('inner', innerTop, ringLo, plate);
+  if (innerRing && innerRing.form !== 'waist' && innerRing.range[1] > cs.innerRing.rIn + 1e-9) {
+    out.push(message('form-too-wide', "The top inner segment's form runs into the cover's inner capture ring.", 'tubes.innerFormOD'));
+  }
+  const outerRing = rangeAt('outer', ctx.outer.count - 1, ringLo, plate);
+  if (waistHits(outerRing, Ro, cs.innerRing.rOut)) {
+    out.push(message('form-too-narrow', "The top outer segment's waist runs into the cover's inner capture ring.", 'tubes.outerFormOD'));
+  }
+  return out;
 }
 
 /** Rod end gap window around the nominal gap (for tests and docs). */

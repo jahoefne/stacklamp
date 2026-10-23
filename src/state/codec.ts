@@ -9,6 +9,12 @@
  *                  `core.diameter` is the core preset's diameter, for `printer.bed*` the
  *                  printer preset's bed (so `pp=a1m` alone means a 180³ bed) and for
  *                  `segments.wall` the nozzle's vase line width (`nz=4` alone: 0.5 mm).
+ * - `fi`, `fo`     body forms fitted to the band count, one FORMS code per band, bottom → top
+ *                  (`s` straight, `d` drop, `b` ball, `w` waist, `r` barrel, `t` star,
+ *                  `f` fluted, `x` twist). Written only when the stack has a form other than
+ *                  straight, so a missing key is an all-straight stack. On decode the string
+ *                  is stored as it is (it repeats over N like the bands); an unknown char reads
+ *                  as straight.
  * - `pal`          only when the palette ≠ DEFAULT_PALETTE: `name~rrggbb,…` (names sanitised
  *                  to `[A-Za-z0-9 -]{1,20}`, space written as '+').
  * - `bi`, `bo`     fitted bands, one base-36 char per band = palette index, bottom → top.
@@ -20,8 +26,21 @@
  *                  A stack whose bands + generator equal the default (with the default
  *                  palette) is omitted entirely.
  */
-import { CORE_PRESETS, PRINTER_PRESETS, defaultParams, deriveDims, getParam, nozzleOf, setParam } from '../geometry';
-import type { LampParams, PetgColour } from '../geometry';
+import {
+  CORE_PRESETS,
+  DEFAULT_FORM,
+  FORMS,
+  PRINTER_PRESETS,
+  allStraight,
+  defaultParams,
+  deriveDims,
+  fitForms,
+  formByCode,
+  getParam,
+  nozzleOf,
+  setParam,
+} from '../geometry';
+import type { FormId, LampParams, PetgColour } from '../geometry';
 import { bandsEqual, fitBands } from './bands';
 import { CONFIG_VERSION, DEFAULT_INNER_BANDS, STACKS, defaultGen } from './config';
 import type { GeneratorKind, GeneratorSpec, LampConfig, Stack } from './config';
@@ -52,7 +71,7 @@ export interface DecodeResult {
   version: number;
 }
 
-/** Longest band string accepted from a link. */
+/** Longest band (or form) string accepted from a link. */
 export const MAX_ENCODED_BANDS = 128;
 
 /**
@@ -65,6 +84,7 @@ const KIND_CODE: Record<GeneratorKind, string> = { alternate: 'a', gradient: 'g'
 const CODE_KIND: Record<string, GeneratorKind> = { a: 'alternate', g: 'gradient', r: 'random' };
 const BAND_KEY: Record<Stack, string> = { inner: CODEC_KEYS.bandsInner, outer: CODEC_KEYS.bandsOuter };
 const GEN_KEY: Record<Stack, string> = { inner: CODEC_KEYS.genInner, outer: CODEC_KEYS.genOuter };
+const FORM_KEY: Record<Stack, string> = { inner: CODEC_KEYS.formsInner, outer: CODEC_KEYS.formsOuter };
 const KNOWN_KEYS = new Set(ALL_URL_KEYS);
 
 /** Band counts for params (via the barrel's deriveDims). */
@@ -133,6 +153,10 @@ export function encodeConfig(c: LampConfig, n: BandCounts): string {
   for (const spec of PARAM_SPECS) {
     const v = formatNumber(getParam(p, spec.path), spec.precision);
     if (v !== formatNumber(getParam(ref, spec.path), spec.precision)) parts.push(`${spec.key}=${v}`);
+  }
+  for (const stack of STACKS) {
+    const forms = fitForms(p.forms[stack], stack === 'inner' ? n.nInner : n.nOuter);
+    if (!allStraight(forms)) parts.push(`${FORM_KEY[stack]}=${forms.map((f) => FORMS[f].code).join('')}`);
   }
   const paletteIsDefault = isDefaultPalette(c.palette);
   if (!paletteIsDefault) {
@@ -212,6 +236,23 @@ function decodeBands(raw: string, palette: readonly PetgColour[], stack: Stack, 
   return out;
 }
 
+function decodeForms(raw: string, stack: Stack, issues: string[]): FormId[] {
+  let s = raw;
+  if (s.length > MAX_ENCODED_BANDS) {
+    issues.push(`The ${stack} forms were too long; kept the first ${MAX_ENCODED_BANDS}.`);
+    s = s.slice(0, MAX_ENCODED_BANDS);
+  }
+  let bad = false;
+  const out = [...s].map((ch) => {
+    const form = formByCode(ch);
+    if (form) return form;
+    bad = true;
+    return DEFAULT_FORM;
+  });
+  if (bad) issues.push(`Some ${stack} forms were unknown; read them as straight.`);
+  return out;
+}
+
 function decodeGen(raw: string, palette: readonly PetgColour[]): GeneratorSpec | null {
   const m = /^([agr])([0-9a-fA-F]*)(m?)(?:\.([0-9a-zA-Z]{1,8}))?$/.exec(raw);
   if (!m) return null;
@@ -287,6 +328,12 @@ export function decodeConfig(hash: string): DecodeResult | null {
     }
     params = setParam(params, spec.path, v);
   }
+  const forms: Record<Stack, FormId[]> = { inner: [], outer: [] };
+  for (const stack of STACKS) {
+    const fRaw = q.get(FORM_KEY[stack]);
+    if (fRaw !== null) forms[stack] = decodeForms(fRaw, stack, issues);
+  }
+  params = { ...params, forms };
 
   const palRaw = q.get(CODEC_KEYS.palette);
   const palette = palRaw === null ? defaultPalette() : decodePalette(palRaw, issues);

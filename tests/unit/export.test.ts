@@ -1,7 +1,7 @@
 /**
  * File writers on real parts: binary STL (size, header, round trip through
  * Manifold.ofMesh) and 3MF (package structure, model, round trip through
- * Manifold.ofMesh and three.js' 3MFLoader).
+ * Manifold.ofMesh and three.js' 3MFLoader), also for every segment form.
  */
 import { strFromU8, unzipSync } from 'fflate';
 import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
@@ -11,10 +11,14 @@ import { buildPartMesh } from '../../src/geometry/build';
 import { derive } from '../../src/geometry/derive';
 import type { Kernel } from '../../src/geometry/kernel';
 import { defaultParams } from '../../src/geometry/params';
-import { PART_IDS, type PartMesh } from '../../src/geometry/types';
+import { deriveDims } from '../../src/geometry/derive';
+import { partFileStem } from '../../src/geometry/forms';
+import { FORM_IDS, PART_IDS, type ExportRequest, type PartMesh } from '../../src/geometry/types';
+import { partFile } from '../../src/export/bundle';
 import { meshToBinaryStl, stlHeader } from '../../src/export/stl';
 import { displayColour, fmtCoord, partTo3mf, threeMfTransform, THREEMF_CORE_NS, THREEMF_MODEL_REL } from '../../src/export/threemf';
 import { getKernel } from '../helpers/kernel';
+import { withParams } from '../helpers/params';
 
 let k: Kernel;
 let parts: PartMesh[];
@@ -142,6 +146,41 @@ describe('3MF', () => {
         triangles += (g.index ? g.index.count : g.getAttribute('position').count) / 3;
       });
       expect(triangles, m.id).toBe(m.triangleCount);
+    }
+  });
+});
+
+describe('segment forms', () => {
+  it('every form writes a closed STL and a 3MF named after it', () => {
+    // one inner band per form (the pattern repeats over the 11 bands)
+    const params = withParams((p) => (p.forms.inner = [...FORM_IDS]));
+    const { layout } = derive(params);
+    const dims = deriveDims(params);
+    const variants = layout!.specs.variants.inner;
+    expect(variants.map((v) => v.form)).toEqual(FORM_IDS);
+    const req: ExportRequest = {
+      params,
+      colourPlan: { palette: [{ id: 'amb', name: 'Amber', hex: '#f0a020' }], inner: Array(dims.inner.count).fill('amb'), outer: [] },
+      format: '3mf',
+      includeFitTest: false,
+      meta: { shareUrl: '', appVersion: 'test', createdAt: '2026-10-22T12:00:00.000Z' },
+    };
+    for (const v of variants) {
+      const m = buildPartMesh(k, 'inner-segment', layout!.specs, 'export', v.bands.length, v.form);
+      expect(m.form).toBe(v.form);
+      expect(m.copies).toBe(v.bands.length);
+      const stem = partFileStem(m.id, m.form);
+      const stl = meshToBinaryStl(m, stem);
+      expect(stl.byteLength, stem).toBe(84 + 50 * m.triangleCount);
+      expect(strFromU8(stl.subarray(0, 80)).replace(/\0+$/, '')).toBe(stlHeader(stem));
+      const xml = strFromU8(unzipSync(partFile(m, req, dims))['3D/3dmodel.model']!);
+      expect(xml.includes('<metadata name="stacklamp:form">'), stem).toBe(v.form !== 'straight');
+      const verts = [...xml.matchAll(/<vertex x="([^"]+)" y="([^"]+)" z="([^"]+)"\/>/g)].flatMap((x) => [Number(x[1]), Number(x[2]), Number(x[3])]);
+      const tris = [...xml.matchAll(/<triangle v1="(\d+)" v2="(\d+)" v3="(\d+)"\/>/g)].flatMap((t) => [Number(t[1]), Number(t[2]), Number(t[3])]);
+      const back = k.Manifold.ofMesh(new k.Mesh({ numProp: 3, vertProperties: new Float32Array(verts), triVerts: new Uint32Array(tris) }));
+      expect(back.status(), stem).toBe('NoError');
+      expect(Math.abs(back.volume() / m.volume - 1), stem).toBeLessThan(1e-4);
+      back.delete();
     }
   });
 });

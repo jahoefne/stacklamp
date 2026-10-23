@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { PRINTER_PRESETS, defaultParams, getParam, setParam } from '../geometry';
-import type { LampParams, PetgColour } from '../geometry';
+import { FORMS, FORM_IDS, PRINTER_PRESETS, defaultParams, fitForms, getParam, setParam } from '../geometry';
+import type { FormId, LampParams, PetgColour } from '../geometry';
 import { fitBands } from './bands';
-import { countsFor, decodeConfig, encodeConfig, encodeConfigAuto } from './codec';
+import { MAX_ENCODED_BANDS, countsFor, decodeConfig, encodeConfig, encodeConfigAuto } from './codec';
 import { GENERATOR_KINDS, STACKS, defaultConfig } from './config';
 import type { GeneratorSpec, LampConfig, Stack } from './config';
 import { generateBands, mulberry32, normalizeSpec } from './generators';
@@ -16,14 +16,17 @@ const decodeOk = (code: string) => {
   return r;
 };
 
-/** Fitted bands as palette indices + generator specs as palette indices: id-independent view. */
+/**
+ * Fitted bands as palette indices + generator specs as palette indices + forms fitted to N:
+ * the id-independent, N-independent view of what a link means.
+ */
 function semantic(c: LampConfig) {
   const n = countsFor(c.params);
   const idx = (id: string) => c.palette.findIndex((p) => p.id === id);
   const gen = (g: GeneratorSpec | null) =>
     g && g.colours.length ? { ...normalizeSpec(g), colours: normalizeSpec(g).colours.map(idx) } : null;
   return {
-    params: c.params,
+    params: { ...c.params, forms: { inner: fitForms(c.params.forms.inner, n.nInner), outer: fitForms(c.params.forms.outer, n.nOuter) } },
     palette: c.palette.map((p) => [p.name, p.hex]),
     inner: fitBands(c.bands.inner, n.nInner, c.palette, c.gen.inner).map(idx),
     outer: fitBands(c.bands.outer, n.nOuter, c.palette, c.gen.outer).map(idx),
@@ -228,6 +231,69 @@ describe('decodeConfig', () => {
   });
 });
 
+describe('segment forms (fi / fo)', () => {
+  const withForms = (inner: FormId[], outer: FormId[]): LampConfig => {
+    const c = defaultConfig();
+    c.params = { ...c.params, forms: { inner, outer } };
+    return c;
+  };
+  it('the default lamp has no forms and still encodes as v=1', () => {
+    const r = decodeOk('v=1');
+    expect(r.config.params.forms).toEqual({ inner: [], outer: [] });
+    expect(encodeConfigAuto(withForms(['straight', 'straight'], ['straight']))).toBe('v=1');
+  });
+  it('writes the forms fitted to N, one code per band, only for a stack that has a form', () => {
+    const c = withForms(['ball', 'straight'], []);
+    expect(encodeConfig(c, { nInner: 5, nOuter: 4 })).toBe('v=1&fi=bsbsb');
+    // longer lists are truncated to N, after the numeric params
+    c.params = setParam(c.params, 'tubes.outerFormOD', 230);
+    c.params.forms.outer = ['drop', 'waist', 'barrel', 'star', 'flute', 'twist', 'straight'];
+    expect(encodeConfig(c, { nInner: 5, nOuter: 4 })).toBe('v=1&ofd=230&fi=bsbsb&fo=dwrt');
+  });
+  it('every form code round-trips and the codes are unique single characters', () => {
+    const codes = FORM_IDS.map((id) => FORMS[id].code);
+    expect(new Set(codes).size).toBe(FORM_IDS.length);
+    for (const code of codes) expect(code).toMatch(/^[a-z]$/);
+    const r = decodeOk(`v=1&fi=${codes.join('')}&fo=${[...codes].reverse().join('')}`);
+    expect(r.issues).toEqual([]);
+    expect(r.config.params.forms).toEqual({ inner: [...FORM_IDS], outer: [...FORM_IDS].reverse() });
+  });
+  it('stores the decoded list as it is and re-encodes it fitted to N', () => {
+    const r = decodeOk('v=1&fi=bsw&fo=x');
+    expect(r.issues).toEqual([]);
+    expect(r.config.params.forms).toEqual({ inner: ['ball', 'straight', 'waist'], outer: ['twist'] });
+    const n = countsFor(r.config.params);
+    const fi = fitForms(r.config.params.forms.inner, n.nInner).map((f) => FORMS[f].code).join('');
+    expect(fi).toMatch(/^(bsw)+(b|bs)?$/);
+    expect(encodeConfigAuto(r.config)).toBe(`v=1&fi=${fi}&fo=${'x'.repeat(n.nOuter)}`);
+    // an all-straight string is kept as stored but needs no key
+    const straight = decodeOk('v=1&fo=sss');
+    expect(straight.config.params.forms.outer).toEqual(['straight', 'straight', 'straight']);
+    expect(encodeConfigAuto(straight.config)).toBe('v=1');
+    expect(decodeOk('v=1&fi=').config.params.forms.inner).toEqual([]);
+  });
+  it('reads unknown form codes as straight, with one issue per stack', () => {
+    const r = decodeOk('v=1&fi=b?Bq&fo=d9');
+    expect(r.config.params.forms).toEqual({ inner: ['ball', 'straight', 'straight', 'straight'], outer: ['drop', 'straight'] });
+    expect(r.issues).toEqual(['Some inner forms were unknown; read them as straight.', 'Some outer forms were unknown; read them as straight.']);
+  });
+  it('caps very long form strings like the bands', () => {
+    const r = decodeOk(`v=1&fo=${'dw'.repeat(300)}`);
+    expect(r.config.params.forms.outer).toHaveLength(MAX_ENCODED_BANDS);
+    expect(r.config.params.forms.outer.slice(0, 3)).toEqual(['drop', 'waist', 'drop']);
+    expect(r.issues).toEqual([`The outer forms were too long; kept the first ${MAX_ENCODED_BANDS}.`]);
+  });
+  it('a link with fi but no fo leaves the outer stack straight', () => {
+    const r = decodeOk('v=1&fi=t');
+    expect(r.issues).toEqual([]);
+    expect(r.config.params.forms).toEqual({ inner: ['star'], outer: [] });
+    // fi is a stacklamp key on its own (read as v1, with the version issue)
+    const bare = decodeOk('fi=t');
+    expect(bare.config.params.forms.inner).toEqual(['star']);
+    expect(bare.issues).toHaveLength(1);
+  });
+});
+
 // ---- 200 random configs round-trip ------------------------------------------------
 
 function pick<T>(rand: () => number, xs: readonly T[]): T {
@@ -274,8 +340,18 @@ function randomStack(rand: () => number, palette: PetgColour[]): { bands: string
   return { bands: Array.from({ length: Math.floor(rand() * 30) }, () => pick(rand, ids)), gen: null };
 }
 
+/** Stored forms: none, exactly N (round-trips verbatim) or a pattern of any length. */
+function randomForms(rand: () => number, n: number): FormId[] {
+  const r = rand();
+  if (r < 0.35) return [];
+  const length = r < 0.7 ? n : 1 + Math.floor(rand() * 20);
+  return Array.from({ length }, () => (rand() < 0.4 ? 'straight' : pick(rand, FORM_IDS)));
+}
+
 function randomConfig(rand: () => number): LampConfig {
-  const params = randomParams(rand);
+  let params = randomParams(rand);
+  const n = countsFor(params);
+  params = { ...params, forms: { inner: randomForms(rand, n.nInner), outer: randomForms(rand, n.nOuter) } };
   const palette = randomPalette(rand);
   const s: Record<Stack, ReturnType<typeof randomStack>> = { inner: randomStack(rand, palette), outer: randomStack(rand, palette) };
   if (rand() < 0.15) return { ...defaultConfig(), params };
@@ -295,6 +371,13 @@ describe('round-trip', () => {
       expect(semantic(r.config), code).toEqual(want);
       expect(encodeConfigAuto(r.config), code).toBe(code);
       for (const stack of STACKS) expect(!!r.config.gen[stack], `${code} ${stack}`).toBe(!!c.gen[stack]);
+      // a stored list of exactly N with a form in it comes back verbatim
+      const n = countsFor(c.params);
+      for (const stack of STACKS) {
+        const stored = c.params.forms[stack];
+        if (stored.length === (stack === 'inner' ? n.nInner : n.nOuter) && stored.some((f) => f !== 'straight'))
+          expect(r.config.params.forms[stack], `${code} ${stack}`).toEqual(stored);
+      }
     }
   });
   it('every param round-trips at its precision', () => {

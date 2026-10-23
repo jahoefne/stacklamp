@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { lampStore, resetLampStore, selectBlockers } from '../../state';
+import type { PartMesh } from '../../geometry';
+import { lampStore, resetLampStore, selectBlockers, selectDims } from '../../state';
+import { fakeParts } from '../../state/test/fakes';
 import { DownloadPanel, blockedText } from './DownloadPanel';
 
 // No worker in jsdom: the download only flips the job to 'running'.
@@ -83,6 +85,28 @@ describe('DownloadPanel', () => {
     expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel' }));
     act(() => actions().setExportJob({ phase: 'done', fileName: 'stacklamp.zip' }));
     expect(document.activeElement).toBe(screen.getByTestId('download-zip'));
+  });
+
+  it('lists one parts row per file, with the form after the part name', () => {
+    render(<DownloadPanel />);
+    act(() => {
+      actions().setForms('outer', ['ball', 'straight']);
+      const s = lampStore.getState();
+      const n = selectDims(s).outer.count;
+      const balls = Math.ceil(n / 2);
+      // The engine yields one outer-segment mesh per form in use.
+      const parts = fakeParts(selectDims(s)).flatMap((m): PartMesh[] =>
+        m.id === 'outer-segment' ? [{ ...m, copies: n - balls }, { ...m, form: 'ball', copies: balls }] : [m],
+      );
+      actions().setPreview({ parts, params: s.config.params, status: 'idle' });
+    });
+    const plain = document.querySelector('tr[data-file="outer-segment"]');
+    const ball = document.querySelector('tr[data-file="outer-segment-ball"]');
+    // (The fit icon's title comes first in the cell text.)
+    expect(plain?.querySelector('th')?.textContent).toMatch(/printerOuter segment$/);
+    expect(ball?.querySelector('th')?.textContent).toMatch(/printerOuter segment · Ball$/);
+    expect(screen.getByRole('rowheader', { name: /Outer segment · Ball$/ })).toBeTruthy();
+    expect(document.querySelector('tr[data-file="inner-segment"] th')?.textContent).toMatch(/printerInner segment$/);
   });
 
   it('words the reason by engine state', () => {

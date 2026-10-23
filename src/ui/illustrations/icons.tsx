@@ -4,6 +4,7 @@
  * Colour comes from `currentColor`; size defaults to 20. Decorative unless `title` is given.
  */
 import type { ReactElement, SVGProps } from 'react';
+import type { FormId } from '../../geometry';
 
 export const ICON_NAMES = [
   'link',
@@ -165,3 +166,70 @@ export const InfoIcon = named('info');
 export const CheckIcon = named('check');
 export const CloseIcon = named('close');
 export const ChevronIcon = named('chevron');
+
+/**
+ * Segment body forms, a tube seen from the side (24 × 24 grid, 2 px `currentColor` strokes,
+ * outlines only). Every glyph keeps the same 10 px straight joint at the top and the bottom
+ * (x 7–17), like the parts: only the body between them changes.
+ */
+const FORM_GLYPHS: Record<FormId, ReactElement> = {
+  straight: <rect x="7" y="3" width="10" height="18" />,
+  drop: <path d="M7 3h10v4c0 3 4 4 4 8c0 2-2 4-4 4v2H7v-2c-2 0-4-2-4-4c0-4 4-5 4-8z" />,
+  ball: <path d="M7 3h10v3c0 2 4 3 4 6s-4 4-4 6v3H7v-3c0-2-4-3-4-6s4-4 4-6z" />,
+  waist: <path d="M7 3h10v3c0 2-3 3-3 6s3 4 3 6v3H7v-3c0-2 3-3 3-6s-3-4-3-6z" />,
+  barrel: <path d="M7 3h10v2c3 3 3 11 0 14v2H7v-2c-3-3-3-11 0-14z" />,
+  star: (
+    <>
+      <path d="M7 3h10v3l2 2-2 2 2 2-2 2 2 2-2 2v3H7v-3l-2-2 2-2-2-2 2-2-2-2 2-2z" />
+      <path d="M12 6v12" />
+    </>
+  ),
+  // Soft waves, mirrored left and right (ribs running straight up).
+  flute: (
+    <>
+      <path d="M7 3h10v3q3 1.5 0 3t0 3t0 3t0 3v3H7v-3q3-1.5 0-3t0-3t0-3t0-3z" />
+      <path d="M12 6v12" />
+    </>
+  ),
+  // The same waves out of phase between the sides, with ribs running diagonally.
+  twist: (
+    <>
+      <path d="M7 3h10v3q3 1.5 0 3t0 3t0 3t0 3v3H7v-3q-3-1.5 0-3t0-3t0-3t0-3z" />
+      <path d="M10 7l4 4M10 13l4 4" />
+    </>
+  ),
+};
+
+export interface FormGlyphProps {
+  form: FormId;
+  /** Rendered width and height in CSS px (the artwork is drawn for 24). */
+  size?: number;
+  /** Accessible name. Omit when the form's name is in visible or hidden text nearby (then aria-hidden). */
+  title?: string;
+  className?: string | undefined;
+}
+
+/** A segment body form as a small ink glyph (`data-form-glyph` names the form). */
+export function FormGlyph({ form, size = 24, title, className }: FormGlyphProps): ReactElement {
+  const a11y: SVGProps<SVGSVGElement> = title ? { role: 'img', 'aria-label': title } : { 'aria-hidden': true };
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="square"
+      strokeLinejoin="miter"
+      focusable="false"
+      className={className}
+      data-form-glyph={form}
+      {...a11y}
+    >
+      {title ? <title>{title}</title> : null}
+      {FORM_GLYPHS[form] ?? FORM_GLYPHS.straight}
+    </svg>
+  );
+}

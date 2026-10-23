@@ -1,0 +1,183 @@
+/* Segment forms: the colour editor's band grid with a form glyph on each tile (see ColourBandEditor). */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.empty {
+  padding: var(--space-5);
+  border: var(--border-bold) dashed var(--color-ink-3);
+  color: var(--color-ink-2);
+  font-size: var(--fs-sm);
+  opacity: 0.8;
+}
+
+/* Eight icon-only segments share the row: tighter side padding than the text variant
+   (the extra element selector outweighs SegmentedControl's `.sm .segment`). */
+.picker > button[role='radio'] {
+  padding-inline: var(--space-1);
+}
+
+.brushName {
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: auto minmax(88px, 1fr) minmax(88px, 1fr);
+  grid-template-rows: auto auto auto;
+  column-gap: var(--space-3);
+  align-items: end;
+  align-self: center;
+  width: min(100%, 340px);
+}
+
+.head {
+  grid-row: 1;
+  padding-bottom: var(--space-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.numbers {
+  grid-row: 2;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column-reverse;
+  padding: var(--border-bold) 0;
+}
+
+.number {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 24px;
+  overflow: hidden;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-2);
+  line-height: 1;
+}
+
+.number + .number {
+  margin-bottom: var(--border-thin);
+}
+
+.column {
+  grid-row: 2;
+  display: flex;
+  flex-direction: column-reverse;
+  border: var(--border-bold) solid var(--color-ink);
+  background: var(--color-ink);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* The band colour as a paper tint, so the ink glyph reads on every colour (Smoke included). */
+.tile {
+  --_c: var(--petg-clr);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-0);
+  background: color-mix(in srgb, var(--_c) 55%, var(--color-paper));
+  color: var(--color-ink);
+  cursor: crosshair;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+/* 1 px ink seams between tiles (the column background shows through). */
+.tile + .tile {
+  margin-bottom: var(--border-thin);
+}
+
+.glyph,
+.preview {
+  grid-area: 1 / 1;
+  max-height: calc(100% - var(--space-1));
+  pointer-events: none;
+}
+
+.preview {
+  display: none;
+}
+
+/* Hover previews the brush: its glyph replaces the band's on a paper inset. */
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover {
+    background: var(--color-paper);
+  }
+
+  .tile:hover .glyph {
+    display: none;
+  }
+
+  .tile:hover .preview {
+    display: block;
+  }
+}
+
+.grid:focus-within .cursor {
+  box-shadow:
+    inset 0 0 0 3px var(--color-ink),
+    inset 0 0 0 5px var(--color-paper);
+}
+
+.tile:focus-visible {
+  z-index: var(--z-raised);
+  outline: var(--focus-ring);
+  outline-offset: -3px;
+}
+
+/* Fill / Alternate under each column; room for the buttons' offset shadow. */
+.actions {
+  grid-row: 3;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-1) var(--space-1) 0;
+}
+
+.action {
+  width: 100%;
+}
+
+@media (pointer: coarse) {
+  .tile,
+  .number {
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 599.98px) {
+  /* As in the colour editor: the gutter takes no width, the numbers overhang into the gap. */
+  .grid {
+    grid-template-columns: 0 minmax(88px, 1fr) minmax(88px, 1fr);
+    margin-left: calc(-1 * var(--space-3));
+  }
+
+  .numbers {
+    width: 0;
+    min-width: 0;
+    justify-self: start;
+  }
+
+  .number {
+    overflow: visible;
+    visibility: hidden;
+  }
+
+  .grid:focus-within .number,
+  .grid:hover .number {
+    visibility: visible;
+  }
+}

@@ -88,12 +88,16 @@ describe('startPersistence', () => {
     actions.setParam('tubes.outerOD', 180);
     actions.paintBand('inner', 2, 'vio');
     actions.addColour({ name: 'Rose', hex: '#ff88aa' });
+    actions.paintForm('outer', 1, 'drop');
+    actions.setForms('inner', ['twist', 'straight']);
     vi.advanceTimersByTime(250);
     stop();
     const init = loadInitial();
     expect(init.source).toBe('link');
     expect(encodeConfigAuto(init.config)).toBe(encodeConfigAuto(store.getState().config));
     expect(init.config.palette.at(-1)).toMatchObject({ name: 'Rose', hex: '#ff88aa' });
+    expect(init.config.params.forms.outer).toEqual(store.getState().config.params.forms.outer);
+    expect(init.config.params.forms.inner.slice(0, 3)).toEqual(['twist', 'straight', 'twist']);
   });
   it('loads a pasted link on hashchange and notifies', () => {
     vi.useFakeTimers();

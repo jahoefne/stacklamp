@@ -2,21 +2,25 @@
  * Every part at preview and export quality for the defaults, the LED tube
  * and the edge cases: a valid single solid (NoError, not empty, one
  * component) with the expected genus (holes), the derived bounding box, and
- * the revolve volume equal to the analytic Pappus volume of its profile.
+ * the revolve volume equal to the analytic Pappus volume of its profile. A
+ * segment stack is built once per form in use: round forms are exact revolves
+ * too; a ribbed form lies between its straight body and its envelope.
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 import { buildPart, buildPartMesh, copiesOf } from '../../src/geometry/build';
-import { segmentRMax } from '../../src/geometry/build/segment';
+import { segmentRMax, segmentRevolveSegments } from '../../src/geometry/build/segment';
 import { derive } from '../../src/geometry/derive';
 import { dispose, type Kernel, type Manifold } from '../../src/geometry/kernel';
-import type { PartSpecs } from '../../src/geometry/layout';
+import { FORMS } from '../../src/geometry/forms';
+import type { PartSpecs, SegmentSpec } from '../../src/geometry/layout';
 import { revolvedPolygonVolume, type Profile } from '../../src/geometry/profile';
 import { baseProfile } from '../../src/geometry/profiles/base';
 import { clampProfile } from '../../src/geometry/profiles/clamp';
 import { coverProfile } from '../../src/geometry/profiles/cover';
+import { segmentEnvelope, segmentSize } from '../../src/geometry/profiles/forms';
 import { segmentProfile } from '../../src/geometry/profiles/segment';
 import { resolution } from '../../src/geometry/quality';
-import { PART_IDS, type PartId, type Quality } from '../../src/geometry/types';
+import { PART_IDS, type FormId, type PartId, type Quality } from '../../src/geometry/types';
 import { defaultParams } from '../../src/geometry/params';
 import { getKernel } from '../helpers/kernel';
 import { CASES, ledTube, withNozzle } from '../helpers/params';
@@ -53,6 +57,13 @@ function body(id: PartId, specs: PartSpecs, q: Quality): { profile: Profile; n: 
   }
 }
 
+/** What to build of a part: one straight build, or one per variant of a segment stack. */
+function builds(id: PartId, specs: PartSpecs): { form?: FormId; spec?: SegmentSpec }[] {
+  if (id === 'inner-segment') return specs.variants.inner.map((v) => ({ form: v.form, spec: v.spec }));
+  if (id === 'outer-segment') return specs.variants.outer.map((v) => ({ form: v.form, spec: v.spec }));
+  return [{}];
+}
+
 function components(m: Manifold): number {
   const parts = m.decompose();
   const n = parts.length;
@@ -67,40 +78,74 @@ describe.each(CASES)('$name', ({ params }) => {
     expect(layout).not.toBeNull();
     const specs = layout!.specs;
     for (const id of PART_IDS) {
-      const m = buildPart(k, id, specs, q);
-      try {
-        expect(m.status(), id).toBe('NoError');
-        expect(m.isEmpty(), id).toBe(false);
-        expect(components(m), `${id} components`).toBe(1);
-        expect(m.genus(), `${id} genus`).toBe(expectedGenus(id, specs));
-        const box = m.boundingBox();
-        const size = dims.fit[id].size;
-        for (let a = 0; a < 3; a++) {
-          expect(Math.abs(box.max[a]! - box.min[a]! - size[a]!), `${id} size[${a}]`).toBeLessThanOrEqual(0.05);
+      for (const { form, spec } of builds(id, specs)) {
+        const name = form ? `${id} (${form})` : id;
+        const m = buildPart(k, id, specs, q, form);
+        try {
+          expect(m.status(), name).toBe('NoError');
+          expect(m.isEmpty(), name).toBe(false);
+          expect(components(m), `${name} components`).toBe(1);
+          expect(m.genus(), `${name} genus`).toBe(expectedGenus(id, specs));
+          const box = m.boundingBox();
+          const size = spec ? segmentSize(spec) : dims.fit[id].size;
+          for (let a = 0; a < 3; a++) {
+            const extent = box.max[a]! - box.min[a]!;
+            // a six-point star has ridges on the x axis but none on the y axis: narrower across y
+            if (form === 'star' && a === 1) expect(extent, `${name} size[1]`).toBeLessThanOrEqual(size[1]! + 0.05);
+            else expect(Math.abs(extent - size[a]!), `${name} size[${a}]`).toBeLessThanOrEqual(0.05);
+          }
+          expect(Math.abs(box.min[2]!), `${name} on the bed`).toBeLessThan(1e-6);
+          expect(Math.abs(box.min[0]! + box.max[0]!), `${name} centred x`).toBeLessThan(0.05);
+          expect(Math.abs(box.min[1]! + box.max[1]!), `${name} centred y`).toBeLessThan(0.05);
+          if (spec) segmentVolume(m, spec, q, name);
+          else partVolume(m, id, specs, q);
+        } finally {
+          dispose(m);
         }
-        expect(Math.abs(box.min[2]!), `${id} on the bed`).toBeLessThan(1e-6);
-        expect(Math.abs(box.min[0]! + box.max[0]!), `${id} centred x`).toBeLessThan(0.05);
-        expect(Math.abs(box.min[1]! + box.max[1]!), `${id} centred y`).toBeLessThan(0.05);
-
-        const { profile, n } = body(id, specs, q);
-        const analytic = revolvedPolygonVolume(profile, n);
-        if (id === 'base' || id === 'top-cover') {
-          const revolved = k.Manifold.revolve([profile], n);
-          const rv = revolved.volume();
-          revolved.delete();
-          expect(Math.abs(rv / analytic - 1), `${id} body volume`).toBeLessThan(1e-6);
-          const cut = id === 'base' || expectedGenus(id, specs) > 0;
-          if (cut) expect(m.volume(), `${id} cutters remove material`).toBeLessThan(rv);
-          else expect(Math.abs(m.volume() / rv - 1), `${id} without slits`).toBeLessThan(1e-12);
-        } else {
-          expect(Math.abs(m.volume() / analytic - 1), `${id} volume`).toBeLessThan(1e-6);
-        }
-      } finally {
-        dispose(m);
       }
+    }
+    // the stack's footprint (bed fit) is its widest variant in use
+    for (const [id, stack] of [
+      ['inner-segment', 'inner'],
+      ['outer-segment', 'outer'],
+    ] as const) {
+      const used = specs.variants[stack].filter((v) => v.bands.length > 0);
+      const widest = Math.max(dims[stack].socketOD, ...used.map((v) => segmentSize(v.spec)[0]));
+      expect(dims.fit[id].size[0], id).toBeCloseTo(widest, 9);
+      expect(dims[stack].maxOD, id).toBeCloseTo(widest, 9);
     }
   });
 });
+
+/** A segment's volume: the Pappus volume of a round form, between straight body and envelope for a ribbed one. */
+function segmentVolume(m: Manifold, spec: SegmentSpec, q: Quality, name: string): void {
+  const n = segmentRevolveSegments(spec, resolution(q));
+  const volume = m.volume();
+  const profile = revolvedPolygonVolume(segmentProfile(spec), n);
+  if (FORMS[spec.form].round) {
+    expect(Math.abs(volume / profile - 1), `${name} volume`).toBeLessThan(1e-6);
+  } else {
+    expect(volume, `${name} above the straight body`).toBeGreaterThan(profile);
+    expect(volume, `${name} within its envelope`).toBeLessThan(revolvedPolygonVolume(segmentEnvelope(spec), n));
+  }
+}
+
+/** Any other part's volume: its revolve's Pappus volume, less what the cutters take. */
+function partVolume(m: Manifold, id: PartId, specs: PartSpecs, q: Quality): void {
+  const { profile, n } = body(id, specs, q);
+  const analytic = revolvedPolygonVolume(profile, n);
+  if (id === 'base' || id === 'top-cover') {
+    const revolved = k.Manifold.revolve([profile], n);
+    const rv = revolved.volume();
+    revolved.delete();
+    expect(Math.abs(rv / analytic - 1), `${id} body volume`).toBeLessThan(1e-6);
+    const cut = id === 'base' || expectedGenus(id, specs) > 0;
+    if (cut) expect(m.volume(), `${id} cutters remove material`).toBeLessThan(rv);
+    else expect(Math.abs(m.volume() / rv - 1), `${id} without slits`).toBeLessThan(1e-12);
+  } else {
+    expect(Math.abs(m.volume() / analytic - 1), `${id} volume`).toBeLessThan(1e-6);
+  }
+}
 
 describe('meshes', () => {
   it('outer segment ≈ 98 g, inner ≈ 29 g at the defaults (export)', () => {
@@ -129,6 +174,26 @@ describe('meshes', () => {
       const E = (3 * F) / 2;
       expect(V - E + F, id).toBe(2 - 2 * expectedGenus(id, layout!.specs));
       expect(ex.massGrams.estimate, id).toBeLessThanOrEqual(ex.massGrams.solid + 1e-9);
+    }
+  });
+
+  it('every form variant: a closed export mesh (V − E + F = 0) with its form, copies and vase estimate', () => {
+    const { layout } = derive(CASES.find((c) => c.name === 'mixed forms')!.params);
+    const specs = layout!.specs;
+    for (const [id, stack] of [
+      ['inner-segment', 'inner'],
+      ['outer-segment', 'outer'],
+    ] as const) {
+      expect(specs.variants[stack].length, stack).toBeGreaterThan(2);
+      for (const v of specs.variants[stack]) {
+        const ex = buildPartMesh(k, id, specs, 'export', v.bands.length, v.form);
+        const V = ex.positions.length / 3;
+        const F = ex.triangleCount;
+        expect(V - (3 * F) / 2 + F, `${id} ${v.form}`).toBe(0);
+        expect(ex.form).toBe(v.form);
+        expect(ex.copies).toBe(v.bands.length);
+        expect(ex.massGrams.estimate / ex.massGrams.solid).toBeCloseTo(vaseFill(v.spec.wall, v.spec.layer), 9);
+      }
     }
   });
 

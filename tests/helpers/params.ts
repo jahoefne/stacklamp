@@ -160,4 +160,58 @@ export const CASES: ParamCase[] = [
       p.segments.rimLeadIn = 0.4;
     }),
   },
+  {
+    name: 'mixed forms',
+    params: withParams((p) => {
+      p.forms.inner = ['ball', 'straight', 'drop', 'waist'];
+      p.forms.outer = ['barrel', 'star', 'flute', 'twist'];
+      p.tubes.innerFormOD = 84;
+      p.tubes.outerFormOD = 230;
+    }),
+  },
+  {
+    name: 'outer waist around inner drops',
+    params: withParams((p) => {
+      p.forms.inner = ['drop'];
+      p.forms.outer = ['waist', 'straight'];
+      p.tubes.innerFormOD = 100;
+      p.tubes.outerFormOD = 260;
+    }),
+  },
+  {
+    // inner widest 71 mm radius + 2 mm against the outer tube's rim at 73.2 mm
+    name: 'inner bulge near the outer tube',
+    params: withParams((p) => {
+      p.tubes.outerOD = 150;
+      p.forms.inner = ['ball', 'flute'];
+      p.tubes.innerFormOD = 142;
+    }),
+  },
+  {
+    // the waist's inside (30 − 13 − 0.8 − 1 = 15.2 mm) just clears the rod and strip (15 mm)
+    name: 'inner waist near the rod',
+    params: withParams((p) => {
+      p.forms.inner = ['waist'];
+      p.tubes.innerFormOD = 86;
+    }),
+  },
+  {
+    name: 'inner form too wide',
+    params: withParams((p) => {
+      p.tubes.outerOD = 150;
+      p.forms.inner = ['ball'];
+      p.tubes.innerFormOD = 150;
+    }),
+    expectErrors: ['form-too-wide'],
+  },
+  {
+    // the outer zone is ~34 mm: a 20 mm ball (and the twist) are scaled down (form-squeezed)
+    name: 'short 80 mm segments with balls',
+    params: withParams((p) => {
+      p.segments.innerHeight = 80;
+      p.segments.outerHeight = 80;
+      p.forms.inner = ['ball'];
+      p.forms.outer = ['ball', 'twist'];
+    }),
+  },
 ];

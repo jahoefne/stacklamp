@@ -12,6 +12,7 @@ export { ColourSection } from './ColourSection';
 export { PaletteEditor } from './PaletteEditor';
 export { GeneratorBar } from './GeneratorBar';
 export { ColourBandEditor } from './ColourBandEditor';
+export { FormBandEditor } from './FormBandEditor';
 export { BaseSection } from './BaseSection';
 export { PrinterTuning, TUNING_PATHS } from './PrinterTuning';
 export { WarningsList, ErrorSummary } from './WarningsList';

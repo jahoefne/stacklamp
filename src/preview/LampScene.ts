@@ -26,7 +26,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import type { CoreKind, DerivedDims, PartId, PartMesh, PetgColour } from '../geometry';
+import type { CoreKind, DerivedDims, PartMesh, PetgColour } from '../geometry';
 import { computeFraming, directionFromAngles, type FrameBounds, MAX_ZOOM, shouldReframe, type Vec3 } from './framing';
 import {
   applyLayout,
@@ -41,7 +41,7 @@ import {
   type PartCopy,
 } from './layout';
 import { BandMaterials, createPartMaterial, glowFor, type Layer, resolveColour } from './materials';
-import { GeometrySet } from './meshes';
+import { GeometrySet, geometryFor, type MeshKey } from './meshes';
 import { FrameSampler, initialTier, readDeviceHints, tierSettings } from './quality';
 import { Core, ENVIRONMENT_INTENSITY, Stage } from './stage';
 import { readStageTokens, type StageTokens } from './stageTokens';
@@ -301,7 +301,7 @@ export class LampScene {
     this.requestRender();
   }
 
-  /** Diagnostics for QA: tier, draw calls, triangles, copies, camera distance. */
+  /** Diagnostics for QA: tier, draw calls, triangles, copies, geometries per part, camera distance. */
   debugInfo(): Record<string, unknown> {
     const info = this.renderer.info;
     return {
@@ -315,6 +315,8 @@ export class LampScene {
       geometries: info.memory.geometries,
       programs: info.programs?.length ?? 0,
       copies: Object.fromEntries(LAMP_PART_IDS.map((id) => [id, this.copies[id].length])),
+      // one geometry per part, per form in use for a segment stack
+      partGeometries: this.geometries.countsByPart(),
       mode: this.mode,
       onScreen: this.onScreen,
       cameraDistance: this.camera.position.distanceTo(this.controls.target),
@@ -480,15 +482,21 @@ export class LampScene {
 
   // ---- parts, colours, layout --------------------------------------------------------
 
-  private rebuildCopies(geometries: Map<PartId, BufferGeometry>, dims: DerivedDims): void {
+  /**
+   * One group per copy. A segment band k shows the mesh of its form (`dims.inner/outer.forms[k]`),
+   * or the stack's straight mesh while that form is still being built; every copy of the
+   * other parts shares the part's one mesh. A part without any geometry gets no copies.
+   */
+  private rebuildCopies(geometries: ReadonlyMap<MeshKey, BufferGeometry>, dims: DerivedDims): void {
     this.clearCopies();
     for (const id of LAMP_PART_IDS) {
-      const geo = geometries.get(id);
       const count = dims.placements[id]?.length ?? 0;
+      const layer = SEGMENT_LAYER[id];
+      const forms = layer ? dims[layer].forms : undefined;
+      const geos = Array.from({ length: count }, (_, k) => geometryFor(geometries, id, forms?.[k]));
       const list: CopyObjects[] = [];
-      if (geo) {
-        const layer = SEGMENT_LAYER[id];
-        for (let k = 0; k < count; k++) {
+      if (geos.every((g) => g !== undefined)) {
+        geos.forEach((geo, k) => {
           const group = new Group();
           group.matrixAutoUpdate = false;
           group.name = `${id}#${k}`;
@@ -506,7 +514,7 @@ export class LampScene {
             list.push({ group, solid });
           }
           this.lamp.add(group);
-        }
+        });
       }
       this.copies[id] = list;
     }

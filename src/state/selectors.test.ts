@@ -9,6 +9,7 @@ import {
   selectDims,
   selectFieldMessages,
   selectFittedBands,
+  selectFittedForms,
   selectPreviewDims,
   selectPreviewStale,
   selectShareUrl,
@@ -65,6 +66,29 @@ describe('selector stability', () => {
     const s = store.getState();
     expect(selectFittedBands(s)).toBe(a);
     expect(selectColourPlan(s).palette).toBe(s.config.palette);
+  });
+  it('fitted forms have N entries and keep their reference while the params do', () => {
+    const store = make();
+    const a = store.getState();
+    const { nInner, nOuter } = selectCounts(a);
+    const inner = selectFittedForms(a, 'inner');
+    const outer = selectFittedForms(a, 'outer');
+    expect(inner).toHaveLength(nInner);
+    expect(outer).toHaveLength(nOuter);
+    expect(inner.every((f) => f === 'straight')).toBe(true);
+    expect(selectFittedForms(a, 'inner')).toBe(inner);
+    store.getState().actions.setUi({ viewMode: 'exploded' });
+    store.getState().actions.setFormBrush('star');
+    store.getState().actions.paintBand('outer', 0, 'grn');
+    const b = store.getState();
+    expect(selectFittedForms(b, 'inner')).toBe(inner);
+    expect(selectFittedForms(b, 'outer')).toBe(outer);
+    store.getState().actions.paintForm('outer', 0);
+    const c = store.getState();
+    expect(selectFittedForms(c, 'outer')).not.toBe(outer);
+    expect(selectFittedForms(c, 'outer')[0]).toBe('star');
+    expect(selectFittedForms(c, 'outer')).toHaveLength(nOuter);
+    expect(selectCode(c)).toContain(`fo=t${'s'.repeat(nOuter - 1)}`);
   });
   it('field messages are stable and shared-empty', () => {
     const store = make();

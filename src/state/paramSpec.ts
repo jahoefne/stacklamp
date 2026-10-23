@@ -1,7 +1,7 @@
 /**
  * URL keys for every parameter. Keys are part of the share-link format and are NEVER renamed
  * or reused; add new keys for new params. A test asserts completeness and uniqueness, also
- * against the codec's own keys (v, pal, bi, bo, gi, go).
+ * against the codec's own keys (v, pal, bi, bo, gi, go, fi, fo).
  */
 import { PARAM_META } from '../geometry';
 import type { CoreKind, EnumParamPath, HeightMode, NozzleId, NumericParamPath, ParamMeta, PrinterId, WireRouting } from '../geometry';
@@ -106,8 +106,17 @@ export const ENUM_PATHS: readonly EnumParamPath[] = [
   'printer.nozzle',
 ];
 
-/** Keys the codec uses for things other than params. */
-export const CODEC_KEYS = { version: 'v', palette: 'pal', bandsInner: 'bi', bandsOuter: 'bo', genInner: 'gi', genOuter: 'go' } as const;
+/** Keys the codec uses for things other than numeric and enum params. */
+export const CODEC_KEYS = {
+  version: 'v',
+  palette: 'pal',
+  bandsInner: 'bi',
+  bandsOuter: 'bo',
+  genInner: 'gi',
+  genOuter: 'go',
+  formsInner: 'fi',
+  formsOuter: 'fo',
+} as const;
 
 /** Every key the codec understands. */
 export const ALL_URL_KEYS: readonly string[] = [

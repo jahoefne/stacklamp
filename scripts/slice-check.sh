@@ -6,7 +6,8 @@
 #
 # Checks per part file:
 #   info    `BambuStudio --info`: the mesh is closed (manifold = yes) and one part.
-#   vase    segments + fit test, as PRINT-PLAN.md says: spiral vase, 1 wall, line width = wall
+#   vase    segments (every form: *segment*, e.g. inner-segment-ball.3mf) + fit test, as
+#           PRINT-PLAN.md says: spiral vase, 1 wall, line width = wall
 #           (read from the config.json next to the file), 0 top/bottom layers, 0 % infill, the
 #           nozzle's standard layer height (0.2 / 0.3 / 0.4 mm), brim 5 mm on the outer segment
 #           only, elephant-foot 0 (in vase mode it would pull the single line inward and narrow
@@ -35,8 +36,9 @@
 # A slice passes when: the CLI exits 0; plate_1.gcode and the sliced 3MF exist; result.json
 # has return_code 0; neither the log nor the slicer warning mentions
 # non-manifold/empty/outside/error; the G-code reaches the model height (± 1 layer); and for
-# segments + fit test the tool path at mid-body is ONE loop whose outer edge is the modelled
-# OD (± 0.05 mm) and in the foot one loop whose inner edge is the modelled socket ID.
+# straight segments + fit test the tool path at mid-body is ONE loop whose outer edge is the
+# modelled OD (± 0.05 mm) and in the foot one loop whose inner edge is the modelled socket ID
+# (segments with a form only get the vase / normal slices and the height check).
 #
 # Env: BAMBU (CLI binary), BAMBU_PROFILES (…/profiles/BBL), SLICE_FILTER (regex on paths).
 # Output: <dir>/_slice/<case>/<part>.<mode>/{log.txt,result.json,plate_1.gcode,<part>.<mode>.3mf}
@@ -44,7 +46,7 @@
 set -u -o pipefail
 
 if [ $# -lt 1 ] || [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
-  sed -n '2,43p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,45p' "$0" | sed 's/^# \{0,1\}//'
   exit 2
 fi
 
@@ -230,7 +232,7 @@ switch (cmd) {
       const part = basename(partFile).replace(/\.[^.]+$/, '');
       const cfg = configNextTo(partFile);
       if (cfg && /segment$|^fit-test$/.test(part)) {
-        // one loop of width w: body outer edge = D, foot inner edge = D + 2c
+        // straight segments only (a form changes the body): one loop of width w, body outer edge = D, foot inner edge = D + 2c
         const p = cfg.params;
         const w = p.segments.wall, c = p.tolerances.segment, ov = p.segments.overlap, lead = p.segments.rimLeadIn;
         const D = part === 'inner-segment' ? cfg.derived.inner.D : cfg.derived.outer.D;
@@ -328,16 +330,16 @@ process_profile() {
   local tag=$1 nozzle=$2 part=$3 mode=$4 wall=$5 base brim_type=no_brim brim_width=0
   base=$(process_for "$tag" "$nozzle")
   nozzle_settings "$nozzle"
-  if [ "$part" = outer-segment ]; then brim_type=outer_only; brim_width=5; fi
+  case "$part" in outer-segment*) brim_type=outer_only; brim_width=5 ;; esac
   local out="$tag-n$nozzle-$part-$mode-w$wall"
   if [ -f "$WORK/profiles/$out.json" ]; then echo "$WORK/profiles/$out.json"; return 0; fi
   case "$part:$mode" in
-    *segment:vase | fit-test:vase)
+    *segment*:vase | fit-test:vase)
       flatten process "$base" "$out" "$BED" brim_type=$brim_type brim_width=$brim_width \
         spiral_mode=1 wall_loops=1 top_shell_layers=0 bottom_shell_layers=0 sparse_infill_density=0% \
         enable_support=0 layer_height=$LAYER elefant_foot_compensation=0 enable_arc_fitting=0 \
         line_width="$wall" outer_wall_line_width="$wall" inner_wall_line_width="$wall" initial_layer_line_width="$wall" ;;
-    *segment:normal | fit-test:normal)
+    *segment*:normal | fit-test:normal)
       flatten process "$base" "$out" "$BED" brim_type=$brim_type brim_width=$brim_width \
         wall_generator=arachne enable_support=0 enable_arc_fitting=0 elefant_foot_compensation=0 ;;
     base:normal)
@@ -394,7 +396,7 @@ while IFS= read -r file; do
   row "$rel" info "$res" "$secs" "$detail"
 
   case "$part" in
-    *segment | fit-test) modes="vase normal" ;;
+    *segment* | fit-test) modes="vase normal" ;;
     *) modes="normal" ;;
   esac
   for mode in $modes; do

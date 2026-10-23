@@ -16,6 +16,8 @@ export const MAIN_PATHS: ReadonlySet<NumericParamPath> = new Set<NumericParamPat
   'core.diameter',
   'tubes.innerOD',
   'tubes.outerOD',
+  'tubes.innerFormOD',
+  'tubes.outerFormOD',
   'segments.innerHeight',
   'segments.outerHeight',
   'segments.wall',
